@@ -1,1 +1,72 @@
-data
+{
+  "Via Matteotti / Via Ciro Menotti": {
+    "meta": {
+      "name": "Via Matteotti / Via Ciro Menotti",
+      "comune": "Acquaviva delle Fonti",
+      "indirizzo": "Via Matteotti / Via Ciro Menotti",
+      "zona": "B2",
+      "tipologia_intervento": "Demolizione + ricostruzione",
+      "note": "Caso pilota Oltreforma | Feasibility"
+    },
+    "urbanistica": {
+      "lotto_mq": 320.0,
+      "iff_mc_mq": 5.0,
+      "h_max_m": 12.0,
+      "piani_residenziali": 3,
+      "sup_lorda_piano_mq": 226.0,
+      "scala_ascensore_esclusi_mq_piano": 30.0,
+      "altezza_urbanistica_m": 3.0,
+      "pt_escluso_da_volume": true,
+      "sup_coperta_preliminare_mq": 223.06
+    },
+    "programma": {
+      "alloggi": 8,
+      "box": 7,
+      "sup_commerciale_residenziale_mq": 608.0,
+      "balconi_fisici_mq": 67.5,
+      "box_mq_totali": 220.0,
+      "qualita": "Medio",
+      "forma": "Normale"
+    },
+    "mercato": {
+      "prezzo_mq_prudente": 2300.0,
+      "prezzo_mq_probabile": 2500.0,
+      "prezzo_mq_ottimistico": 2700.0,
+      "box_prudente": 25000.0,
+      "box_probabile": 27500.0,
+      "box_ottimistico": 30000.0
+    },
+    "costi": {
+      "demolizione": 50000.0,
+      "strutture": 285000.0,
+      "opere_edili": 217000.0,
+      "impianti": 192000.0,
+      "finiture": 174000.0,
+      "serramenti": 60000.0,
+      "ascensore": 40000.0,
+      "fotovoltaico": 8000.0,
+      "marciapiede": 8000.0,
+      "allacci": 8000.0,
+      "spese_tecniche_pct": 8.0,
+      "imprevisti_pct": 5.0,
+      "oneri": 8787.66,
+      "iva_inclusa": false
+    },
+    "incentivi": {
+      "itaca_attivo": true,
+      "itaca_pct": 6.0,
+      "itaca_stato": "Da verificare oltre densità ordinaria",
+      "romani_attivo": true,
+      "romani_pct": 5.0,
+      "romani_stato": "Da verificare cumulabilità/applicabilità",
+      "nota": "Le premialità sono scenari di verifica e non equivalgono automaticamente a volumetria assentibile."
+    },
+    "acquisizione": {
+      "modalita": "Permuta",
+      "prezzo_acquisto": 0.0,
+      "permuta_pct": 22.0,
+      "cash_mista": 0.0,
+      "target_margin_pct": 18.0
+    }
+  }
+}
