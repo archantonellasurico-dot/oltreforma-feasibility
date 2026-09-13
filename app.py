@@ -1,50 +1,37 @@
-
 import streamlit as st
 from pathlib import Path
-import json, io, copy, math
+import json, io, copy
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.pdfgen import canvas
 
 APP_DIR = Path(__file__).resolve().parent
 DATA_FILE = APP_DIR / "data" / "projects.json"
+SCENARIOS = [("prudente", "Prudente"), ("probabile", "Probabile"), ("ottimistico", "Ottimistico")]
 
 st.set_page_config(
     page_title="Oltreforma | Feasibility",
     page_icon="🏛️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 # ---------- Style ----------
 st.markdown("""
 <style>
 :root{
-  --ink:#20242a;
-  --muted:#6f7680;
-  --line:#e6e8eb;
-  --panel:#f7f7f5;
-  --accent:#8b7b66;
-  --ok:#2f6b4f;
-  --warn:#b8791f;
-  --bad:#9d3a3a;
+  --ink:#20242a; --muted:#6f7680; --line:#e6e8eb; --panel:#f7f7f5;
+  --accent:#8b7b66; --ok:#2f6b4f; --warn:#b8791f; --bad:#9d3a3a;
 }
-.block-container{padding-top:1.4rem; padding-bottom:3rem;}
+.block-container{padding-top:1.35rem;padding-bottom:3rem;}
 h1,h2,h3{letter-spacing:-0.02em;}
 .smallcaps{font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
-.hero{
-  border:1px solid var(--line); border-radius:18px; padding:22px 24px;
-  background:linear-gradient(180deg,#fff,#fbfaf8);
-  margin-bottom:14px;
-}
-.kpi{
-  border:1px solid var(--line);border-radius:16px;padding:16px 18px;background:white;
-}
+.hero{border:1px solid var(--line);border-radius:18px;padding:22px 24px;background:linear-gradient(180deg,#fff,#fbfaf8);margin-bottom:14px;}
+.kpi{border:1px solid var(--line);border-radius:16px;padding:16px 18px;background:white;min-height:112px;}
 .kpi .label{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
-.kpi .value{font-size:1.8rem;font-weight:650;margin-top:3px;}
-.status-ok{color:var(--ok);font-weight:650}
-.status-warn{color:var(--warn);font-weight:650}
-.status-bad{color:var(--bad);font-weight:650}
+.kpi .value{font-size:1.55rem;font-weight:650;margin-top:5px;}
+.status-ok{color:var(--ok);font-weight:650}.status-warn{color:var(--warn);font-weight:650}.status-bad{color:var(--bad);font-weight:650}
+.note{border-left:3px solid var(--accent);padding:10px 14px;background:#fbfaf8;border-radius:8px;color:var(--muted);}
 hr{border-color:var(--line)}
 div[data-testid="stMetric"]{border:1px solid var(--line);padding:12px 14px;border-radius:14px;background:#fff;}
 </style>
@@ -53,70 +40,237 @@ div[data-testid="stMetric"]{border:1px solid var(--line);padding:12px 14px;borde
 # ---------- Helpers ----------
 def load_projects():
     if DATA_FILE.exists():
-        return json.loads(DATA_FILE.read_text(encoding="utf-8"))
+        try:
+            return json.loads(DATA_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            return {}
     return {}
 
+
 def save_projects(data):
+    DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
     DATA_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
+
 def euro(v):
-    s = f"{v:,.0f}".replace(",", ".")
+    try:
+        s = f"{float(v):,.0f}".replace(",", ".")
+    except Exception:
+        s = "0"
     return f"€ {s}"
 
-def fmt(v, d=1):
-    return f"{v:,.{d}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-def get_project():
-    return st.session_state.projects[st.session_state.current_project]
+def fmt(v, d=1):
+    try:
+        return f"{float(v):,.{d}f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except Exception:
+        return "0"
+
+
+def slug(s):
+    return "".join(ch if ch.isalnum() else "_" for ch in str(s))[:80]
+
+
+def default_product(name="Appartamento"):
+    return {
+        "tipologia": name,
+        "n": 1,
+        "sup_media_mq": 90.0,
+        "prezzo_prudente": 210000.0,
+        "prezzo_probabile": 235000.0,
+        "prezzo_ottimistico": 260000.0,
+        "box_per_unita": 1.0,
+        "note": "",
+    }
+
+
+def legacy_to_v2(p):
+    """Rende i vecchi progetti V1 compatibili senza perdere i dati."""
+    p = copy.deepcopy(p)
+    u = p.setdefault("urbanistica", {})
+    lotto = float(u.get("lotto_mq", 0))
+    iff = float(u.get("iff_mc_mq", 0))
+    u.setdefault("regime", "Fondiario / IED")
+    u.setdefault("st_mq", lotto)
+    u.setdefault("sf_mq", lotto)
+    u.setdefault("ift_mc_mq", 0.0)
+    u.setdefault("iff_mc_mq", iff)
+    u.setdefault("rc_pct", 0.0)
+    u.setdefault("piani_max", int(u.get("piani_residenziali", 3)))
+    u.setdefault("standard_mq_ab", 0.0)
+    u.setdefault("parcheggi_mq_mc", 0.10)
+    u.setdefault("volume_approvato_m3", 0.0)
+    u.setdefault("volume_progetto_diretto_m3", 0.0)
+    u.setdefault("usa_volume_diretto", False)
+    u.setdefault("nota_urbanistica", "")
+
+    pr = p.setdefault("programma", {})
+    p.setdefault("analisi", {})
+    p["analisi"].setdefault("modalita_ricavi", "Sintetico €/m²")
+    p["analisi"].setdefault("alternativa_attiva", "Scenario base")
+
+    # Se non esiste un mix, non lo imponiamo ai vecchi progetti: restano sul metodo sintetico.
+    p.setdefault("mix_prodotti", [])
+    p.setdefault("alternative", {})
+    p.setdefault("permuta_opzioni", [])
+
+    c = p.setdefault("costi", {})
+    c.setdefault("sistemazioni_esterne", 0.0)
+    c.setdefault("predisposizioni_lift", 0.0)
+    c.setdefault("finanziamento", 0.0)
+    c.setdefault("costo_sviluppo_override", 0.0)
+
+    a = p.setdefault("acquisizione", {})
+    a.setdefault("modalita", "Acquisto")
+    a.setdefault("prezzo_acquisto", 0.0)
+    a.setdefault("permuta_pct", 0.0)
+    a.setdefault("cash_mista", 0.0)
+    a.setdefault("target_margin_pct", 18.0)
+    a.setdefault("permuta_valore_manuale", 0.0)
+    a.setdefault("usa_permuta_manuale", False)
+    return p
+
 
 def ensure_session():
     if "projects" not in st.session_state:
-        st.session_state.projects = load_projects()
+        raw = load_projects()
+        st.session_state.projects = {k: legacy_to_v2(v) for k, v in raw.items()}
     if "current_project" not in st.session_state:
         st.session_state.current_project = next(iter(st.session_state.projects), None)
     if "view_mode" not in st.session_state:
         st.session_state.view_mode = "Vista Studio"
 
-def calc(p):
-    u = p["urbanistica"]; pr = p["programma"]; m = p["mercato"]; c = p["costi"]; i = p["incentivi"]; a = p["acquisizione"]
-    sup_vol_piano = max(u["sup_lorda_piano_mq"] - u["scala_ascensore_esclusi_mq_piano"], 0)
-    vol_prg = u["lotto_mq"] * u["iff_mc_mq"]
-    vol_proj = sup_vol_piano * u["piani_residenziali"] * u["altezza_urbanistica_m"]
-    itaca = i["itaca_pct"] if i["itaca_attivo"] else 0
-    romani = i["romani_pct"] if i["romani_attivo"] else 0
-    vol_inc = vol_prg * (1 + (itaca + romani) / 100)
 
-    lavori = sum(c[k] for k in [
-        "demolizione","strutture","opere_edili","impianti","finiture","serramenti",
-        "ascensore","fotovoltaico","marciapiede","allacci"
-    ])
-    tecniche = lavori * c["spese_tecniche_pct"]/100
-    imprevisti = lavori * c["imprevisti_pct"]/100
-    sviluppo = lavori + tecniche + imprevisti + c["oneri"]
+def get_project():
+    return st.session_state.projects[st.session_state.current_project]
 
-    out = {
-        "sup_vol_piano": sup_vol_piano, "vol_prg": vol_prg, "vol_proj": vol_proj,
-        "vol_inc": vol_inc, "bonus_pct": itaca+romani, "lavori": lavori,
-        "tecniche": tecniche, "imprevisti": imprevisti, "sviluppo": sviluppo,
-        "scenari": {}
+
+def calc_urbanistica(p):
+    u = p["urbanistica"]
+    st_mq = float(u.get("st_mq", u.get("lotto_mq", 0)))
+    sf_mq = float(u.get("sf_mq", u.get("lotto_mq", 0)))
+    ift = float(u.get("ift_mc_mq", 0))
+    iff = float(u.get("iff_mc_mq", 0))
+    regime = u.get("regime", "Fondiario / IED")
+
+    vol_territoriale = st_mq * ift if ift > 0 else 0.0
+    vol_fondiario = sf_mq * iff if iff > 0 else 0.0
+    if regime == "Convenzionato / PUE" and vol_territoriale > 0:
+        vol_ordinario = vol_territoriale
+        indice_usato = "Ift × St"
+    else:
+        vol_ordinario = vol_fondiario
+        indice_usato = "Iff × Sf"
+
+    sup_vol_piano = max(float(u.get("sup_lorda_piano_mq", 0)) - float(u.get("scala_ascensore_esclusi_mq_piano", 0)), 0)
+    vol_geometrico = sup_vol_piano * int(u.get("piani_residenziali", 0)) * float(u.get("altezza_urbanistica_m", 0))
+    vol_progetto = float(u.get("volume_progetto_diretto_m3", 0)) if u.get("usa_volume_diretto", False) else vol_geometrico
+    vol_approvato = float(u.get("volume_approvato_m3", 0))
+
+    i = p.get("incentivi", {})
+    itaca = float(i.get("itaca_pct", 0)) if i.get("itaca_attivo", False) else 0.0
+    romani = float(i.get("romani_pct", 0)) if i.get("romani_attivo", False) else 0.0
+    bonus = itaca + romani
+    vol_incentivato = vol_ordinario * (1 + bonus / 100) if vol_ordinario else 0.0
+
+    return {
+        "vol_territoriale": vol_territoriale,
+        "vol_fondiario": vol_fondiario,
+        "vol_ordinario": vol_ordinario,
+        "indice_usato": indice_usato,
+        "sup_vol_piano": sup_vol_piano,
+        "vol_geometrico": vol_geometrico,
+        "vol_progetto": vol_progetto,
+        "vol_approvato": vol_approvato,
+        "bonus_pct": bonus,
+        "vol_incentivato": vol_incentivato,
     }
-    for s in ["prudente","probabile","ottimistico"]:
-        ric_res = pr["sup_commerciale_residenziale_mq"] * m[f"prezzo_mq_{s}"]
-        ric_box = pr["box"] * m[f"box_{s}"]
-        ricavi = ric_res + ric_box
-        permuta = ricavi * a["permuta_pct"]/100 if a["modalita"] in ["Permuta","Mista"] else 0
-        cash = a["prezzo_acquisto"] if a["modalita"]=="Acquisto" else (a["cash_mista"] if a["modalita"]=="Mista" else 0)
-        inv = sviluppo + cash
-        utile = ricavi - sviluppo - cash - permuta
-        margine = (utile/ricavi*100) if ricavi else 0
-        max_acq = ricavi*(1-a["target_margin_pct"]/100)-sviluppo
-        max_perm_pct = max(0, min(100, max_acq/ricavi*100)) if ricavi else 0
-        out["scenari"][s] = {
-            "ric_res":ric_res,"ric_box":ric_box,"ricavi":ricavi,"permuta":permuta,
-            "cash":cash,"investimento":inv,"utile":utile,"margine":margine,
-            "max_acq":max_acq,"max_perm_pct":max_perm_pct
+
+
+def calc_costs(p, override=0.0):
+    c = p["costi"]
+    if override and override > 0:
+        return {"lavori": override, "tecniche": 0.0, "imprevisti": 0.0, "oneri": 0.0, "finanziamento": 0.0, "sviluppo": override, "override": True}
+    if float(c.get("costo_sviluppo_override", 0)) > 0:
+        v = float(c["costo_sviluppo_override"])
+        return {"lavori": v, "tecniche": 0.0, "imprevisti": 0.0, "oneri": 0.0, "finanziamento": 0.0, "sviluppo": v, "override": True}
+    keys = [
+        "demolizione", "strutture", "opere_edili", "impianti", "finiture", "serramenti",
+        "ascensore", "fotovoltaico", "marciapiede", "allacci", "sistemazioni_esterne", "predisposizioni_lift"
+    ]
+    lavori = sum(float(c.get(k, 0)) for k in keys)
+    tecniche = lavori * float(c.get("spese_tecniche_pct", 0)) / 100
+    imprevisti = lavori * float(c.get("imprevisti_pct", 0)) / 100
+    oneri = float(c.get("oneri", 0))
+    finanziamento = float(c.get("finanziamento", 0))
+    sviluppo = lavori + tecniche + imprevisti + oneri + finanziamento
+    return {"lavori": lavori, "tecniche": tecniche, "imprevisti": imprevisti, "oneri": oneri, "finanziamento": finanziamento, "sviluppo": sviluppo, "override": False}
+
+
+def calc_mix_revenue(mix, scenario):
+    total = 0.0
+    rows = []
+    for row in mix:
+        n = int(row.get("n", 0))
+        unit = float(row.get(f"prezzo_{scenario}", 0))
+        value = n * unit
+        total += value
+        rows.append({"tipologia": row.get("tipologia", ""), "n": n, "unit": unit, "value": value})
+    return total, rows
+
+
+def calc_synthetic_revenue(p, scenario):
+    pr = p["programma"]; m = p["mercato"]
+    ric_res = float(pr.get("sup_commerciale_residenziale_mq", 0)) * float(m.get(f"prezzo_mq_{scenario}", 0))
+    ric_box = int(pr.get("box", 0)) * float(m.get(f"box_{scenario}", 0))
+    return ric_res + ric_box
+
+
+def calc_project(p):
+    urb = calc_urbanistica(p)
+    cost = calc_costs(p)
+    mode = p.get("analisi", {}).get("modalita_ricavi", "Sintetico €/m²")
+    mix = p.get("mix_prodotti", [])
+    a = p["acquisizione"]
+    scenarios = {}
+    for s, _ in SCENARIOS:
+        if mode == "Mix per tipologia" and mix:
+            revenue, product_rows = calc_mix_revenue(mix, s)
+        else:
+            revenue = calc_synthetic_revenue(p, s)
+            product_rows = []
+
+        if a.get("modalita") in ["Permuta", "Mista"]:
+            if a.get("usa_permuta_manuale", False):
+                permuta = float(a.get("permuta_valore_manuale", 0))
+            else:
+                permuta = revenue * float(a.get("permuta_pct", 0)) / 100
+        else:
+            permuta = 0.0
+        cash = float(a.get("prezzo_acquisto", 0)) if a.get("modalita") == "Acquisto" else (float(a.get("cash_mista", 0)) if a.get("modalita") == "Mista" else 0.0)
+        utile = revenue - cost["sviluppo"] - cash - permuta
+        margine = utile / revenue * 100 if revenue else 0.0
+        max_acq = revenue * (1 - float(a.get("target_margin_pct", 18)) / 100) - cost["sviluppo"]
+        max_perm_pct = max(0, min(100, max_acq / revenue * 100)) if revenue else 0.0
+        scenarios[s] = {
+            "ricavi": revenue, "permuta": permuta, "cash": cash, "utile": utile, "margine": margine,
+            "max_acq": max_acq, "max_perm_pct": max_perm_pct, "product_rows": product_rows,
         }
+    return {"urbanistica": urb, "costi": cost, "scenari": scenarios}
+
+
+def calc_alternative(alt, target_margin=18.0):
+    mix = alt.get("mix_prodotti", [])
+    cost = float(alt.get("costo_sviluppo", 0))
+    out = {}
+    for s, _ in SCENARIOS:
+        revenue, _ = calc_mix_revenue(mix, s)
+        residual = revenue - cost
+        margin_before_land = residual / revenue * 100 if revenue else 0
+        max_land = revenue * (1 - target_margin / 100) - cost
+        out[s] = {"ricavi": revenue, "costo": cost, "residuo": residual, "margine_pre_land": margin_before_land, "max_land": max_land}
     return out
+
 
 def judgement(margin, target):
     if margin >= target:
@@ -125,294 +279,366 @@ def judgement(margin, target):
         return "DA NEGOZIARE", "warn"
     return "NON CONVENIENTE", "bad"
 
-def make_pdf(p, r, client_view=True):
-    bio = io.BytesIO()
-    c = canvas.Canvas(bio, pagesize=A4)
-    W,H=A4
-    def txt(x,y,t,size=10,bold=False,col=colors.HexColor("#20242a")):
-        c.setFillColor(col); c.setFont("Helvetica-Bold" if bold else "Helvetica", size); c.drawString(x,y,str(t))
-    y=H-55
-    txt(45,y,"OLTREFORMA | FEASIBILITY",15,True); y-=24
-    txt(45,y,p["meta"]["name"],18,True); y-=18
-    txt(45,y,f'{p["meta"]["comune"]} · {p["meta"]["zona"]} · {p["meta"]["tipologia_intervento"]}',9,col=colors.HexColor("#6f7680")); y-=28
-    c.setStrokeColor(colors.HexColor("#e6e8eb")); c.line(45,y,W-45,y); y-=26
 
-    txt(45,y,"Sintesi urbanistica",11,True); y-=18
-    txt(55,y,f'Lotto: {fmt(p["urbanistica"]["lotto_mq"])} m²  |  Iff: {fmt(p["urbanistica"]["iff_mc_mq"])} mc/m²'); y-=15
-    txt(55,y,f'Volume ordinario: {fmt(r["vol_prg"],0)} m³  |  Volume progetto: {fmt(r["vol_proj"],0)} m³'); y-=15
-    txt(55,y,f'Volume incentivato teorico: {fmt(r["vol_inc"],0)} m³  |  Bonus scenario: {fmt(r["bonus_pct"])}%'); y-=26
+def total_units(p):
+    if p.get("analisi", {}).get("modalita_ricavi") == "Mix per tipologia" and p.get("mix_prodotti"):
+        return sum(int(x.get("n", 0)) for x in p["mix_prodotti"])
+    return int(p.get("programma", {}).get("alloggi", 0))
 
-    txt(45,y,"Scenario probabile",11,True); y-=18
-    s=r["scenari"]["probabile"]
-    txt(55,y,f'Valore commerciale: {euro(s["ricavi"])}'); y-=15
-    txt(55,y,f'Costo sviluppo prima acquisizione: {euro(r["sviluppo"])}'); y-=15
-    txt(55,y,f'Utile stimato: {euro(s["utile"])}'); y-=15
-    txt(55,y,f'Margine: {fmt(s["margine"])}%'); y-=15
-    txt(55,y,f'Prezzo massimo sostenibile acquisizione: {euro(s["max_acq"])}'); y-=15
-    txt(55,y,f'Permuta di riferimento: {fmt(p["acquisizione"]["permuta_pct"])}%'); y-=28
 
-    j,_=judgement(s["margine"],p["acquisizione"]["target_margin_pct"])
-    txt(45,y,f'Esito: {j}',14,True); y-=30
-    txt(45,y,"Note",10,True); y-=16
-    note = ("Le premialità volumetriche sono trattate come scenario di verifica. "
-            "La loro effettiva utilizzabilità deve essere confermata rispetto alla disciplina urbanistica e normativa vigente.")
-    for line in [note[i:i+90] for i in range(0,len(note),90)]:
-        txt(55,y,line,8); y-=12
+def total_sale_area(p):
+    if p.get("analisi", {}).get("modalita_ricavi") == "Mix per tipologia" and p.get("mix_prodotti"):
+        return sum(int(x.get("n", 0)) * float(x.get("sup_media_mq", 0)) for x in p["mix_prodotti"])
+    return float(p.get("programma", {}).get("sup_commerciale_residenziale_mq", 0))
 
-    c.setFillColor(colors.HexColor("#6f7680")); c.setFont("Helvetica",7)
-    c.drawString(45,28,"Documento preliminare di fattibilità. Non sostituisce verifiche urbanistiche, fiscali, strutturali o estimative.")
-    c.save()
-    bio.seek(0)
-    return bio.getvalue()
+
+def make_pdf(p, r):
+    bio = io.BytesIO(); c = canvas.Canvas(bio, pagesize=A4); W, H = A4
+    def txt(x, y, t, size=10, bold=False, col=colors.HexColor("#20242a")):
+        c.setFillColor(col); c.setFont("Helvetica-Bold" if bold else "Helvetica", size); c.drawString(x, y, str(t))
+    y = H - 55
+    txt(45, y, "OLTREFORMA | FEASIBILITY V2", 15, True); y -= 24
+    txt(45, y, p["meta"]["name"], 18, True); y -= 18
+    txt(45, y, f'{p["meta"]["comune"]} · {p["meta"]["zona"]} · {p["meta"]["tipologia_intervento"]}', 9, col=colors.HexColor("#6f7680")); y -= 28
+    c.setStrokeColor(colors.HexColor("#e6e8eb")); c.line(45, y, W-45, y); y -= 24
+
+    u = r["urbanistica"]; s = r["scenari"]["probabile"]
+    txt(45, y, "Sintesi urbanistica", 11, True); y -= 17
+    txt(55, y, f'Regime: {p["urbanistica"].get("regime", "-")}  |  Zona: {p["meta"]["zona"]}'); y -= 14
+    txt(55, y, f'Volume ordinario ({u["indice_usato"]}): {fmt(u["vol_ordinario"],0)} m³  |  Volume progetto: {fmt(u["vol_progetto"],0)} m³'); y -= 14
+    if u["vol_approvato"] > 0:
+        txt(55, y, f'Volume approvato/riferimento: {fmt(u["vol_approvato"],0)} m³'); y -= 14
+    txt(55, y, f'Volume incentivato teorico: {fmt(u["vol_incentivato"],0)} m³  |  Bonus scenario: {fmt(u["bonus_pct"])}%'); y -= 24
+
+    txt(45, y, "Programma e mercato", 11, True); y -= 17
+    txt(55, y, f'Unità: {total_units(p)}  |  Superficie privata/commerciale di riferimento: {fmt(total_sale_area(p),0)} m²'); y -= 14
+    if p.get("analisi", {}).get("modalita_ricavi") == "Mix per tipologia":
+        for row in p.get("mix_prodotti", []):
+            txt(60, y, f'{row.get("tipologia")}: {row.get("n",0)} × {fmt(row.get("sup_media_mq",0),0)} m² · prezzo prob. {euro(row.get("prezzo_probabile",0))}', 8); y -= 12
+    y -= 8
+
+    txt(45, y, "Scenario probabile", 11, True); y -= 17
+    txt(55, y, f'Valore commerciale: {euro(s["ricavi"])}'); y -= 14
+    txt(55, y, f'Costo sviluppo prima acquisizione: {euro(r["costi"]["sviluppo"])}'); y -= 14
+    txt(55, y, f'Utile dopo acquisizione/permuta impostata: {euro(s["utile"])}'); y -= 14
+    txt(55, y, f'Margine: {fmt(s["margine"])}%  |  Max acquisizione al target: {euro(s["max_acq"])}'); y -= 22
+
+    if p.get("alternative"):
+        txt(45, y, "Confronto alternative – scenario probabile", 11, True); y -= 17
+        for name, alt in p["alternative"].items():
+            ar = calc_alternative(alt, float(p["acquisizione"].get("target_margin_pct", 18)))["probabile"]
+            txt(55, y, f'{name}: ricavi {euro(ar["ricavi"])} · costo {euro(ar["costo"])} · residuo pre-land {euro(ar["residuo"])}', 8); y -= 12
+        y -= 8
+
+    txt(45, y, "Nota", 10, True); y -= 15
+    note = "Valutazione preliminare: urbanistica, costi, mercato, fiscalità e forma della permuta devono essere verificati prima di una proposta vincolante."
+    for line in [note[i:i+92] for i in range(0, len(note), 92)]:
+        txt(55, y, line, 8); y -= 12
+    c.setFillColor(colors.HexColor("#6f7680")); c.setFont("Helvetica", 7)
+    c.drawString(45, 28, "Oltreforma | Feasibility V2 · Documento preliminare, non sostitutivo di perizia o verifica urbanistica/fiscale.")
+    c.save(); bio.seek(0); return bio.getvalue()
+
 
 ensure_session()
 
 # ---------- Sidebar ----------
 with st.sidebar:
     st.markdown('<div class="smallcaps">Oltreforma</div>', unsafe_allow_html=True)
-    st.markdown("## Feasibility")
-    st.caption("Valutazione preliminare immobiliare")
-
-    names=list(st.session_state.projects.keys())
+    st.markdown("## Feasibility V2")
+    st.caption("Fattibilità immobiliare · Studio / Impresa")
+    names = list(st.session_state.projects.keys())
     if names:
         idx = names.index(st.session_state.current_project) if st.session_state.current_project in names else 0
-        chosen = st.selectbox("Progetto", names, index=idx)
-        st.session_state.current_project = chosen
-
-    st.session_state.view_mode = st.radio("Vista", ["Vista Studio","Vista Cliente / Impresa"], horizontal=False)
-
+        st.session_state.current_project = st.selectbox("Progetto", names, index=idx)
+    st.session_state.view_mode = st.radio("Vista", ["Vista Studio", "Vista Cliente / Impresa"], horizontal=False)
     st.divider()
-    new_name=st.text_input("Nuovo progetto", placeholder="Es. Via Roma")
+    new_name = st.text_input("Nuovo progetto", placeholder="Es. Area B3 - Via Toscani")
     if st.button("＋ Crea progetto", use_container_width=True):
-        if new_name.strip():
-            template=copy.deepcopy(get_project())
-            template["meta"]["name"]=new_name.strip()
-            template["meta"]["indirizzo"]=new_name.strip()
-            st.session_state.projects[new_name.strip()]=template
-            st.session_state.current_project=new_name.strip()
-            save_projects(st.session_state.projects)
-            st.rerun()
-
+        if new_name.strip() and st.session_state.current_project:
+            template = copy.deepcopy(get_project())
+            template["meta"]["name"] = new_name.strip(); template["meta"]["indirizzo"] = new_name.strip()
+            st.session_state.projects[new_name.strip()] = template
+            st.session_state.current_project = new_name.strip(); save_projects(st.session_state.projects); st.rerun()
     if st.button("Duplica progetto", use_container_width=True) and st.session_state.current_project:
-        base=st.session_state.current_project
-        n=f"{base} - copia"
-        k=2
+        base = st.session_state.current_project; n = f"{base} - copia"; k = 2
         while n in st.session_state.projects:
-            n=f"{base} - copia {k}"; k+=1
-        st.session_state.projects[n]=copy.deepcopy(get_project())
-        st.session_state.projects[n]["meta"]["name"]=n
-        save_projects(st.session_state.projects)
-        st.session_state.current_project=n
-        st.rerun()
+            n = f"{base} - copia {k}"; k += 1
+        st.session_state.projects[n] = copy.deepcopy(get_project()); st.session_state.projects[n]["meta"]["name"] = n
+        st.session_state.current_project = n; save_projects(st.session_state.projects); st.rerun()
 
 if not st.session_state.current_project:
-    st.info("Crea il primo progetto dalla barra laterale.")
-    st.stop()
+    st.info("Crea il primo progetto dalla barra laterale."); st.stop()
 
-p=get_project()
-r=calc(p)
+p = get_project(); r = calc_project(p); prob = r["scenari"]["probabile"]
 
 # ---------- Header ----------
 st.markdown(f"""
 <div class="hero">
-<div class="smallcaps">{p["meta"]["comune"]} · Zona {p["meta"]["zona"]}</div>
-<div style="font-size:2rem;font-weight:700;margin-top:4px">{p["meta"]["name"]}</div>
-<div style="color:#6f7680;margin-top:4px">{p["meta"]["tipologia_intervento"]}</div>
+<div class="smallcaps">{p['meta']['comune']} · Zona {p['meta']['zona']}</div>
+<div style="font-size:2rem;font-weight:700;margin-top:4px">{p['meta']['name']}</div>
+<div style="color:#6f7680;margin-top:4px">{p['meta']['tipologia_intervento']}</div>
 </div>
 """, unsafe_allow_html=True)
 
-prob=r["scenari"]["probabile"]
-j,jc=judgement(prob["margine"],p["acquisizione"]["target_margin_pct"])
-k1,k2,k3,k4=st.columns(4)
+j, jc = judgement(prob["margine"], float(p["acquisizione"].get("target_margin_pct", 18)))
+k1, k2, k3, k4 = st.columns(4)
 k1.metric("Valore probabile", euro(prob["ricavi"]))
-k2.metric("Costo sviluppo", euro(r["sviluppo"]))
+k2.metric("Costo sviluppo", euro(r["costi"]["sviluppo"]))
 k3.metric("Margine probabile", f'{fmt(prob["margine"])}%')
 k4.markdown(f'<div class="kpi"><div class="label">Esito</div><div class="value status-{jc}">{j}</div></div>', unsafe_allow_html=True)
 
-# Client view: compact
-if st.session_state.view_mode=="Vista Cliente / Impresa":
+# ---------- Vista Cliente / Impresa ----------
+if st.session_state.view_mode == "Vista Cliente / Impresa":
     st.markdown("### Sintesi operazione")
-    c1,c2,c3=st.columns(3)
-    c1.metric("Alloggi", p["programma"]["alloggi"])
-    c2.metric("Box", p["programma"]["box"])
-    c3.metric("Prezzo massimo sostenibile", euro(prob["max_acq"]))
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Unità", total_units(p)); c2.metric("Valore probabile", euro(prob["ricavi"]))
+    c3.metric("Residuo prima del suolo", euro(prob["ricavi"] - r["costi"]["sviluppo"]))
+    c4.metric("Max acquisizione al target", euro(prob["max_acq"]))
+
+    if p.get("alternative"):
+        st.markdown("### Confronto alternative")
+        rows = []
+        for name, alt in p["alternative"].items():
+            ar = calc_alternative(alt, float(p["acquisizione"].get("target_margin_pct", 18)))["probabile"]
+            rows.append({"Alternativa": name, "Ricavi": euro(ar["ricavi"]), "Costo sviluppo": euro(ar["costo"]), "Residuo pre-suolo": euro(ar["residuo"]), "Max suolo/permuta al target": euro(ar["max_land"])})
+        st.dataframe(rows, hide_index=True, use_container_width=True)
 
     st.markdown("### Tre scenari")
-    cols=st.columns(3)
-    for col,s,label in zip(cols,["prudente","probabile","ottimistico"],["Prudente","Probabile","Ottimistico"]):
-        x=r["scenari"][s]
+    cols = st.columns(3)
+    for col, (s, label) in zip(cols, SCENARIOS):
+        x = r["scenari"][s]
         with col:
-            st.markdown(f"**{label}**")
-            st.metric("Valore commerciale", euro(x["ricavi"]))
-            st.metric("Margine", f'{fmt(x["margine"])}%')
-            st.metric("Max acquisizione", euro(x["max_acq"]))
+            st.markdown(f"**{label}**"); st.metric("Valore", euro(x["ricavi"])); st.metric("Margine", f'{fmt(x["margine"])}%'); st.metric("Max acquisizione", euro(x["max_acq"]))
 
-    st.markdown("### Urbanistica")
-    if r["vol_proj"]<=r["vol_prg"]:
-        st.success(f'Il volume di progetto ({fmt(r["vol_proj"],0)} m³) rientra nel volume ordinario.')
-    elif r["vol_proj"]<=r["vol_inc"]:
-        st.warning(f'Il progetto rientra solo nello scenario incentivato teorico: {fmt(r["vol_proj"],0)} m³ su {fmt(r["vol_inc"],0)} m³.')
-    else:
-        st.error("Il progetto supera anche lo scenario incentivato teorico.")
+    if p.get("permuta_opzioni"):
+        st.markdown("### Opzioni negoziali")
+        for op in p["permuta_opzioni"]:
+            val = float(op.get("valore_totale", 0)); margin = (prob["ricavi"] - r["costi"]["sviluppo"] - val) / prob["ricavi"] * 100 if prob["ricavi"] else 0
+            st.write(f'**{op.get("nome","Opzione")}** — {op.get("descrizione","")} · valore {euro(val)} · margine teorico {fmt(margin)}%')
 
-    pdf=make_pdf(p,r,client_view=True)
-    st.download_button("Scarica report PDF", data=pdf, file_name=f'{p["meta"]["name"]}_fattibilita.pdf', mime="application/pdf")
+    st.download_button("Scarica report PDF", data=make_pdf(p, r), file_name=f'{slug(p["meta"]["name"])}_fattibilita.pdf', mime="application/pdf")
     st.stop()
 
 # ---------- Studio tabs ----------
-tabs=st.tabs(["Dashboard","Immobile","Urbanistica","Progetto","Costi","Mercato","Incentivi","Acquisizione / Permuta","Report"])
+tabs = st.tabs(["Dashboard", "Immobile", "Urbanistica", "Product Mix", "Costi", "Mercato", "Alternative", "Incentivi", "Acquisizione / Permuta", "Report"])
 
 with tabs[0]:
     st.markdown("### Dashboard Studio")
-    st.caption("Controllo sintetico economico, urbanistico e negoziale.")
-    a,b,c=st.columns(3)
-    a.metric("Volume ordinario", f'{fmt(r["vol_prg"],0)} m³')
-    b.metric("Volume progetto", f'{fmt(r["vol_proj"],0)} m³')
-    c.metric("Volume incentivato teorico", f'{fmt(r["vol_inc"],0)} m³')
-
+    st.caption("Controllo economico, urbanistico e negoziale. I dati marcati come preliminari restano da verificare.")
+    u = r["urbanistica"]
+    a, b, c, d = st.columns(4)
+    a.metric(f'Volume ordinario · {u["indice_usato"]}', f'{fmt(u["vol_ordinario"],0)} m³')
+    b.metric("Volume progetto", f'{fmt(u["vol_progetto"],0)} m³')
+    c.metric("Volume approvato/rif.", f'{fmt(u["vol_approvato"],0)} m³' if u["vol_approvato"] else "—")
+    d.metric("Volume incentivato teorico", f'{fmt(u["vol_incentivato"],0)} m³')
     st.markdown("#### Scenari economici")
-    rows=[]
-    for s,label in [("prudente","Prudente"),("probabile","Probabile"),("ottimistico","Ottimistico")]:
-        x=r["scenari"][s]
-        rows.append({
-            "Scenario":label,
-            "Valore commerciale":euro(x["ricavi"]),
-            "Utile":euro(x["utile"]),
-            "Margine":f'{fmt(x["margine"])}%',
-            "Max acquisizione":euro(x["max_acq"]),
-            "Permuta max teorica":f'{fmt(x["max_perm_pct"])}%'
-        })
+    rows = []
+    for s, label in SCENARIOS:
+        x = r["scenari"][s]
+        rows.append({"Scenario": label, "Valore commerciale": euro(x["ricavi"]), "Utile": euro(x["utile"]), "Margine": f'{fmt(x["margine"])}%', "Max acquisizione": euro(x["max_acq"]), "Permuta max teorica": f'{fmt(x["max_perm_pct"])}%'})
     st.dataframe(rows, use_container_width=True, hide_index=True)
+    if p.get("alternative"):
+        st.markdown("#### Alternative progettuali · scenario probabile")
+        rows = []
+        for name, alt in p["alternative"].items():
+            ar = calc_alternative(alt, float(p["acquisizione"].get("target_margin_pct", 18)))["probabile"]
+            rows.append({"Alternativa": name, "Ricavi": euro(ar["ricavi"]), "Costo": euro(ar["costo"]), "Residuo pre-suolo": euro(ar["residuo"]), "Margine pre-suolo": f'{fmt(ar["margine_pre_land"])}%', "Max suolo/permuta target": euro(ar["max_land"])})
+        st.dataframe(rows, hide_index=True, use_container_width=True)
 
 with tabs[1]:
     st.markdown("### Immobile")
-    c1,c2=st.columns(2)
+    c1, c2 = st.columns(2)
     with c1:
-        p["meta"]["name"]=st.text_input("Nome progetto",p["meta"]["name"])
-        p["meta"]["comune"]=st.text_input("Comune",p["meta"]["comune"])
-        p["meta"]["indirizzo"]=st.text_input("Indirizzo",p["meta"]["indirizzo"])
+        p["meta"]["name"] = st.text_input("Nome progetto", p["meta"]["name"])
+        p["meta"]["comune"] = st.text_input("Comune", p["meta"]["comune"])
+        p["meta"]["indirizzo"] = st.text_input("Indirizzo", p["meta"]["indirizzo"])
     with c2:
-        p["meta"]["zona"]=st.text_input("Zona urbanistica",p["meta"]["zona"])
-        p["meta"]["tipologia_intervento"]=st.selectbox("Intervento",["Demolizione + ricostruzione","Nuova costruzione","Ristrutturazione"],index=["Demolizione + ricostruzione","Nuova costruzione","Ristrutturazione"].index(p["meta"]["tipologia_intervento"]) if p["meta"]["tipologia_intervento"] in ["Demolizione + ricostruzione","Nuova costruzione","Ristrutturazione"] else 0)
-        p["meta"]["note"]=st.text_area("Note",p["meta"].get("note",""))
+        p["meta"]["zona"] = st.text_input("Zona urbanistica", p["meta"]["zona"])
+        opts = ["Demolizione + ricostruzione", "Nuova costruzione", "Ristrutturazione"]
+        cur = p["meta"].get("tipologia_intervento", opts[0]); p["meta"]["tipologia_intervento"] = st.selectbox("Intervento", opts, index=opts.index(cur) if cur in opts else 0)
+        p["meta"]["note"] = st.text_area("Note", p["meta"].get("note", ""))
 
 with tabs[2]:
     st.markdown("### Urbanistica")
-    u=p["urbanistica"]
-    c1,c2,c3=st.columns(3)
+    u = p["urbanistica"]
+    reg_opts = ["Fondiario / IED", "Convenzionato / PUE"]
+    u["regime"] = st.selectbox("Regime di calcolo", reg_opts, index=reg_opts.index(u.get("regime")) if u.get("regime") in reg_opts else 0)
+    c1, c2, c3, c4 = st.columns(4)
     with c1:
-        u["lotto_mq"]=st.number_input("Lotto (m²)",0.0,value=float(u["lotto_mq"]),step=1.0)
-        u["iff_mc_mq"]=st.number_input("Iff (mc/m²)",0.0,value=float(u["iff_mc_mq"]),step=.1)
-        u["h_max_m"]=st.number_input("H max (m)",0.0,value=float(u["h_max_m"]),step=.1)
+        u["st_mq"] = st.number_input("St · superficie territoriale (m²)", 0.0, value=float(u.get("st_mq", 0)), step=1.0)
+        u["ift_mc_mq"] = st.number_input("Ift (mc/m²)", 0.0, value=float(u.get("ift_mc_mq", 0)), step=.01)
+        u["standard_mq_ab"] = st.number_input("Standard (m²/ab)", 0.0, value=float(u.get("standard_mq_ab", 0)), step=.5)
     with c2:
-        u["piani_residenziali"]=st.number_input("Piani residenziali",1,value=int(u["piani_residenziali"]),step=1)
-        u["sup_lorda_piano_mq"]=st.number_input("Sup. lorda/piano (m²)",0.0,value=float(u["sup_lorda_piano_mq"]),step=1.0)
-        u["altezza_urbanistica_m"]=st.number_input("Altezza urbanistica/piano (m)",0.0,value=float(u["altezza_urbanistica_m"]),step=.05)
+        u["sf_mq"] = st.number_input("Sf · superficie fondiaria (m²)", 0.0, value=float(u.get("sf_mq", 0)), step=1.0)
+        u["iff_mc_mq"] = st.number_input("Iff (mc/m²)", 0.0, value=float(u.get("iff_mc_mq", 0)), step=.01)
+        u["rc_pct"] = st.number_input("Rc (%)", 0.0, 100.0, value=float(u.get("rc_pct", 0)), step=1.0)
     with c3:
-        u["scala_ascensore_esclusi_mq_piano"]=st.number_input("Scala/ascensore esclusi (m²/piano)",0.0,value=float(u["scala_ascensore_esclusi_mq_piano"]),step=1.0)
-        u["sup_coperta_preliminare_mq"]=st.number_input("Sup. coperta preesistente (m²)",0.0,value=float(u["sup_coperta_preliminare_mq"]),step=1.0)
-        u["pt_escluso_da_volume"]=st.checkbox("PT escluso dalla volumetria",value=bool(u["pt_escluso_da_volume"]))
-
-    rr=calc(p)
-    x1,x2,x3,x4=st.columns(4)
-    x1.metric("Sup. volumetrica/piano",f'{fmt(rr["sup_vol_piano"])} m²')
-    x2.metric("Volume PRG",f'{fmt(rr["vol_prg"],0)} m³')
-    x3.metric("Volume progetto",f'{fmt(rr["vol_proj"],0)} m³')
-    x4.metric("Scarto ordinario",f'{fmt(rr["vol_prg"]-rr["vol_proj"],0)} m³')
+        u["h_max_m"] = st.number_input("H max (m)", 0.0, value=float(u.get("h_max_m", 0)), step=.1)
+        u["piani_max"] = st.number_input("Piani max", 0, value=int(u.get("piani_max", 0)), step=1)
+        u["parcheggi_mq_mc"] = st.number_input("Parcheggi privati (m²/m³)", 0.0, value=float(u.get("parcheggi_mq_mc", .1)), step=.01)
+    with c4:
+        u["volume_approvato_m3"] = st.number_input("Volume approvato / riferimento (m³)", 0.0, value=float(u.get("volume_approvato_m3", 0)), step=10.0)
+        u["usa_volume_diretto"] = st.checkbox("Inserisci volume progetto diretto", value=bool(u.get("usa_volume_diretto", False)))
+        if u["usa_volume_diretto"]:
+            u["volume_progetto_diretto_m3"] = st.number_input("Volume progetto (m³)", 0.0, value=float(u.get("volume_progetto_diretto_m3", 0)), step=10.0)
+    with st.expander("Calcolo geometrico del volume progetto", expanded=not u.get("usa_volume_diretto", False)):
+        g1, g2, g3, g4 = st.columns(4)
+        u["piani_residenziali"] = g1.number_input("Piani considerati", 0, value=int(u.get("piani_residenziali", 0)), step=1)
+        u["sup_lorda_piano_mq"] = g2.number_input("Sup. lorda/piano (m²)", 0.0, value=float(u.get("sup_lorda_piano_mq", 0)), step=1.0)
+        u["scala_ascensore_esclusi_mq_piano"] = g3.number_input("Esclusioni/piano (m²)", 0.0, value=float(u.get("scala_ascensore_esclusi_mq_piano", 0)), step=1.0)
+        u["altezza_urbanistica_m"] = g4.number_input("Altezza urbanistica (m)", 0.0, value=float(u.get("altezza_urbanistica_m", 0)), step=.05)
+        u["pt_escluso_da_volume"] = st.checkbox("PT escluso dalla volumetria", value=bool(u.get("pt_escluso_da_volume", False)))
+        u["sup_coperta_preliminare_mq"] = st.number_input("Sup. coperta preesistente / riferimento (m²)", 0.0, value=float(u.get("sup_coperta_preliminare_mq", 0)), step=1.0)
+    u["nota_urbanistica"] = st.text_area("Nota urbanistica / verifiche aperte", u.get("nota_urbanistica", ""))
+    rr = calc_project(p); ur = rr["urbanistica"]
+    x1, x2, x3, x4 = st.columns(4)
+    x1.metric("Volume territoriale Ift×St", f'{fmt(ur["vol_territoriale"],0)} m³' if ur["vol_territoriale"] else "—")
+    x2.metric("Volume fondiario Iff×Sf", f'{fmt(ur["vol_fondiario"],0)} m³' if ur["vol_fondiario"] else "—")
+    x3.metric("Volume progetto", f'{fmt(ur["vol_progetto"],0)} m³')
+    x4.metric("Scarto vs ordinario", f'{fmt(ur["vol_ordinario"]-ur["vol_progetto"],0)} m³')
 
 with tabs[3]:
-    st.markdown("### Programma edilizio")
-    pr=p["programma"]
-    c1,c2,c3=st.columns(3)
-    with c1:
-        pr["alloggi"]=st.number_input("Alloggi",1,value=int(pr["alloggi"]))
-        pr["box"]=st.number_input("Box",0,value=int(pr["box"]))
-    with c2:
-        pr["sup_commerciale_residenziale_mq"]=st.number_input("Sup. commerciale residenziale (m²)",0.0,value=float(pr["sup_commerciale_residenziale_mq"]),step=1.0)
-        pr["balconi_fisici_mq"]=st.number_input("Balconi fisici (m²)",0.0,value=float(pr["balconi_fisici_mq"]),step=1.0)
-    with c3:
-        pr["box_mq_totali"]=st.number_input("Box totali (m²)",0.0,value=float(pr["box_mq_totali"]),step=1.0)
-        pr["qualita"]=st.selectbox("Qualità",["Economico","Medio","Medio-alto","Alto"],index=["Economico","Medio","Medio-alto","Alto"].index(pr["qualita"]) if pr["qualita"] in ["Economico","Medio","Medio-alto","Alto"] else 1)
+    st.markdown("### Product Mix")
+    p["analisi"]["modalita_ricavi"] = st.radio("Metodo ricavi", ["Sintetico €/m²", "Mix per tipologia"], index=1 if p["analisi"].get("modalita_ricavi") == "Mix per tipologia" else 0, horizontal=True)
+    if p["analisi"]["modalita_ricavi"] == "Sintetico €/m²":
+        pr = p["programma"]; c1, c2, c3 = st.columns(3)
+        pr["alloggi"] = c1.number_input("Alloggi", 1, value=int(pr.get("alloggi", 1)))
+        pr["sup_commerciale_residenziale_mq"] = c2.number_input("Sup. commerciale residenziale (m²)", 0.0, value=float(pr.get("sup_commerciale_residenziale_mq", 0)), step=1.0)
+        pr["box"] = c3.number_input("Box", 0, value=int(pr.get("box", 0)))
+        pr["balconi_fisici_mq"] = c1.number_input("Balconi fisici (m²)", 0.0, value=float(pr.get("balconi_fisici_mq", 0)), step=1.0)
+        pr["box_mq_totali"] = c2.number_input("Box totali (m²)", 0.0, value=float(pr.get("box_mq_totali", 0)), step=1.0)
+    else:
+        st.caption("Ogni tipologia ha quantità, superficie media e prezzo unitario per scenario. Le superfici sono di riferimento commerciale/privato e non sostituiscono il calcolo urbanistico.")
+        mix = p.setdefault("mix_prodotti", [])
+        for idx, row in enumerate(list(mix)):
+            with st.container(border=True):
+                c1, c2, c3, c4 = st.columns([1.6, .7, .9, .6])
+                row["tipologia"] = c1.text_input("Tipologia", row.get("tipologia", ""), key=f"mix_name_{idx}")
+                row["n"] = c2.number_input("N.", 0, value=int(row.get("n", 0)), step=1, key=f"mix_n_{idx}")
+                row["sup_media_mq"] = c3.number_input("Sup. media (m²)", 0.0, value=float(row.get("sup_media_mq", 0)), step=5.0, key=f"mix_sup_{idx}")
+                if c4.button("Elimina", key=f"mix_del_{idx}"):
+                    mix.pop(idx); st.rerun()
+                q1, q2, q3 = st.columns(3)
+                row["prezzo_prudente"] = q1.number_input("Prezzo prudente (€)", 0.0, value=float(row.get("prezzo_prudente", 0)), step=5000.0, key=f"mix_pp_{idx}")
+                row["prezzo_probabile"] = q2.number_input("Prezzo probabile (€)", 0.0, value=float(row.get("prezzo_probabile", 0)), step=5000.0, key=f"mix_pb_{idx}")
+                row["prezzo_ottimistico"] = q3.number_input("Prezzo ottimistico (€)", 0.0, value=float(row.get("prezzo_ottimistico", 0)), step=5000.0, key=f"mix_po_{idx}")
+                row["note"] = st.text_input("Note / pertinenze", row.get("note", ""), key=f"mix_note_{idx}")
+        if st.button("＋ Aggiungi tipologia"):
+            mix.append(default_product()); st.rerun()
+        rr = calc_project(p)
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Unità totali", total_units(p)); c2.metric("Superficie totale di riferimento", f'{fmt(total_sale_area(p),0)} m²'); c3.metric("Ricavi probabili", euro(rr["scenari"]["probabile"]["ricavi"]))
 
 with tabs[4]:
-    st.markdown("### Costi")
-    c=p["costi"]
-    fields=[
-        ("demolizione","Demolizione"),("strutture","Fondazioni + strutture"),
-        ("opere_edili","Opere edili"),("impianti","Impianti"),("finiture","Finiture"),
-        ("serramenti","Serramenti"),("ascensore","Ascensore"),("fotovoltaico","Fotovoltaico"),
-        ("marciapiede","Marciapiede"),("allacci","Allacci")
+    st.markdown("### Costi di sviluppo")
+    c = p["costi"]
+    st.caption("Inserisci costi netti IVA. Il costo override serve per screening preliminari o alternative già stimate.")
+    c["costo_sviluppo_override"] = st.number_input("Costo sviluppo diretto / override (€) · 0 = usa dettaglio", 0.0, value=float(c.get("costo_sviluppo_override", 0)), step=10000.0)
+    fields = [
+        ("demolizione", "Demolizione"), ("strutture", "Fondazioni + strutture"), ("opere_edili", "Opere edili"),
+        ("impianti", "Impianti"), ("finiture", "Finiture"), ("serramenti", "Serramenti"),
+        ("ascensore", "Ascensori"), ("predisposizioni_lift", "Predisposizioni home-lift"), ("fotovoltaico", "Fotovoltaico"),
+        ("sistemazioni_esterne", "Sistemazioni esterne / viabilità"), ("marciapiede", "Marciapiedi"), ("allacci", "Allacci"),
     ]
-    cols=st.columns(2)
-    for idx,(k,label) in enumerate(fields):
-        with cols[idx%2]:
-            c[k]=st.number_input(f"{label} (€)",0.0,value=float(c[k]),step=1000.0,key=f"cost_{k}")
-    c1,c2,c3=st.columns(3)
-    c["spese_tecniche_pct"]=c1.number_input("Spese tecniche (%)",0.0,value=float(c["spese_tecniche_pct"]),step=.5)
-    c["imprevisti_pct"]=c2.number_input("Imprevisti (%)",0.0,value=float(c["imprevisti_pct"]),step=.5)
-    c["oneri"]=c3.number_input("Oneri / contributi (€)",0.0,value=float(c["oneri"]),step=500.0)
-    rr=calc(p)
-    st.metric("Costo sviluppo prima dell'acquisizione",euro(rr["sviluppo"]))
+    cols = st.columns(3)
+    for idx, (k, label) in enumerate(fields):
+        with cols[idx % 3]:
+            c[k] = st.number_input(f"{label} (€)", 0.0, value=float(c.get(k, 0)), step=5000.0, key=f"cost_{k}")
+    c1, c2, c3, c4 = st.columns(4)
+    c["spese_tecniche_pct"] = c1.number_input("Spese tecniche (%)", 0.0, value=float(c.get("spese_tecniche_pct", 0)), step=.5)
+    c["imprevisti_pct"] = c2.number_input("Imprevisti (%)", 0.0, value=float(c.get("imprevisti_pct", 0)), step=.5)
+    c["oneri"] = c3.number_input("Oneri / contributi (€)", 0.0, value=float(c.get("oneri", 0)), step=5000.0)
+    c["finanziamento"] = c4.number_input("Finanziamento / interessi (€)", 0.0, value=float(c.get("finanziamento", 0)), step=5000.0)
+    cr = calc_costs(p)
+    x1, x2, x3, x4 = st.columns(4)
+    x1.metric("Lavori", euro(cr["lavori"])); x2.metric("Spese tecniche", euro(cr["tecniche"])); x3.metric("Imprevisti", euro(cr["imprevisti"])); x4.metric("Costo sviluppo", euro(cr["sviluppo"]))
 
 with tabs[5]:
     st.markdown("### Mercato")
-    m=p["mercato"]
-    st.caption("Tre scenari modificabili.")
-    data=[]
-    for s,label in [("prudente","Prudente"),("probabile","Probabile"),("ottimistico","Ottimistico")]:
-        c1,c2,c3=st.columns([1.2,1,1])
-        c1.markdown(f"**{label}**")
-        m[f"prezzo_mq_{s}"]=c2.number_input(f"€/m² {label}",0.0,value=float(m[f"prezzo_mq_{s}"]),step=50.0,key=f"pmq_{s}")
-        m[f"box_{s}"]=c3.number_input(f"Box € {label}",0.0,value=float(m[f"box_{s}"]),step=500.0,key=f"box_{s}")
-    rr=calc(p)
-    st.dataframe([
-        {"Scenario":"Prudente","Valore":euro(rr["scenari"]["prudente"]["ricavi"])},
-        {"Scenario":"Probabile","Valore":euro(rr["scenari"]["probabile"]["ricavi"])},
-        {"Scenario":"Ottimistico","Valore":euro(rr["scenari"]["ottimistico"]["ricavi"])}
-    ],hide_index=True,use_container_width=True)
+    if p["analisi"].get("modalita_ricavi") == "Sintetico €/m²":
+        m = p["mercato"]; st.caption("Metodo sintetico: €/m² residenziale + valore box.")
+        for s, label in SCENARIOS:
+            c1, c2, c3 = st.columns([1.2, 1, 1]); c1.markdown(f"**{label}**")
+            m[f"prezzo_mq_{s}"] = c2.number_input(f"€/m² {label}", 0.0, value=float(m.get(f"prezzo_mq_{s}", 0)), step=50.0, key=f"pmq_{s}")
+            m[f"box_{s}"] = c3.number_input(f"Box € {label}", 0.0, value=float(m.get(f"box_{s}", 0)), step=500.0, key=f"box_{s}")
+    else:
+        st.info("I prezzi di mercato sono impostati direttamente per ogni tipologia nel Product Mix. Qui trovi il riepilogo.")
+        rows = []
+        for row in p.get("mix_prodotti", []):
+            rows.append({"Tipologia": row.get("tipologia"), "N.": row.get("n"), "Sup. media": f'{fmt(row.get("sup_media_mq",0),0)} m²', "Prudente": euro(row.get("prezzo_prudente",0)), "Probabile": euro(row.get("prezzo_probabile",0)), "Ottimistico": euro(row.get("prezzo_ottimistico",0))})
+        st.dataframe(rows, hide_index=True, use_container_width=True)
+    rr = calc_project(p)
+    st.markdown("#### Valore complessivo")
+    cols = st.columns(3)
+    for col, (s, label) in zip(cols, SCENARIOS): col.metric(label, euro(rr["scenari"][s]["ricavi"]))
 
 with tabs[6]:
-    st.markdown("### Incentivi e premialità")
-    i=p["incentivi"]
-    c1,c2=st.columns(2)
-    with c1:
-        i["itaca_attivo"]=st.checkbox("ITACA attivo",value=bool(i["itaca_attivo"]))
-        i["itaca_pct"]=st.number_input("Bonus ITACA (%)",0.0,value=float(i["itaca_pct"]),step=.5)
-        i["itaca_stato"]=st.selectbox("Stato ITACA",["Verificato","Da verificare oltre densità ordinaria","Non applicabile"],index=["Verificato","Da verificare oltre densità ordinaria","Non applicabile"].index(i["itaca_stato"]) if i["itaca_stato"] in ["Verificato","Da verificare oltre densità ordinaria","Non applicabile"] else 1)
-    with c2:
-        i["romani_attivo"]=st.checkbox("Decreto Romani attivo",value=bool(i["romani_attivo"]))
-        i["romani_pct"]=st.number_input("Bonus Romani (%)",0.0,value=float(i["romani_pct"]),step=.5)
-        i["romani_stato"]=st.selectbox("Stato Romani",["Verificato","Da verificare cumulabilità/applicabilità","Non applicabile"],index=["Verificato","Da verificare cumulabilità/applicabilità","Non applicabile"].index(i["romani_stato"]) if i["romani_stato"] in ["Verificato","Da verificare cumulabilità/applicabilità","Non applicabile"] else 1)
-    rr=calc(p)
-    st.warning(i["nota"])
-    a,b,c=st.columns(3)
-    a.metric("Bonus teorico",f'{fmt(rr["bonus_pct"])}%')
-    b.metric("Volume incentivato teorico",f'{fmt(rr["vol_inc"],0)} m³')
-    c.metric("Margine vs progetto",f'{fmt(rr["vol_inc"]-rr["vol_proj"],0)} m³')
+    st.markdown("### Alternative progettuali")
+    st.caption("Confronta concept diversi senza alterare il progetto attivo. Ogni alternativa usa un costo sviluppo sintetico e un proprio mix prodotti.")
+    alts = p.setdefault("alternative", {})
+    if not alts:
+        st.info("Nessuna alternativa configurata per questo progetto.")
+    for name, alt in alts.items():
+        with st.expander(name, expanded=True):
+            alt["costo_sviluppo"] = st.number_input("Costo sviluppo (€)", 0.0, value=float(alt.get("costo_sviluppo", 0)), step=10000.0, key=f"altcost_{slug(name)}")
+            ar = calc_alternative(alt, float(p["acquisizione"].get("target_margin_pct", 18)))
+            rows = []
+            for s, label in SCENARIOS:
+                x = ar[s]; rows.append({"Scenario": label, "Ricavi": euro(x["ricavi"]), "Costo": euro(x["costo"]), "Residuo pre-suolo": euro(x["residuo"]), "Max suolo/permuta al target": euro(x["max_land"])})
+            st.dataframe(rows, hide_index=True, use_container_width=True)
+            st.caption("Mix dell'alternativa")
+            st.dataframe([{"Tipologia": x.get("tipologia"), "N.": x.get("n"), "Sup. media": x.get("sup_media_mq"), "Prezzo probabile": euro(x.get("prezzo_probabile",0))} for x in alt.get("mix_prodotti", [])], hide_index=True, use_container_width=True)
 
 with tabs[7]:
-    st.markdown("### Acquisizione / Permuta")
-    a=p["acquisizione"]
-    a["modalita"]=st.selectbox("Modalità",["Acquisto","Permuta","Mista"],index=["Acquisto","Permuta","Mista"].index(a["modalita"]))
-    c1,c2,c3=st.columns(3)
-    a["prezzo_acquisto"]=c1.number_input("Prezzo acquisto (€)",0.0,value=float(a["prezzo_acquisto"]),step=5000.0)
-    a["permuta_pct"]=c2.slider("Permuta (% valore realizzato)",0.0,40.0,float(a["permuta_pct"]),.5)
-    a["cash_mista"]=c3.number_input("Cash in modalità mista (€)",0.0,value=float(a["cash_mista"]),step=5000.0)
-    a["target_margin_pct"]=st.number_input("Margine obiettivo (%)",0.0,50.0,float(a["target_margin_pct"]),.5)
-    rr=calc(p); s=rr["scenari"]["probabile"]
-    c1,c2,c3=st.columns(3)
-    c1.metric("Permuta probabile",euro(s["permuta"]))
-    c2.metric("Max acquisizione sostenibile",euro(s["max_acq"]))
-    c3.metric("Permuta max teorica",f'{fmt(s["max_perm_pct"])}%')
+    st.markdown("### Incentivi e premialità")
+    i = p["incentivi"]; c1, c2 = st.columns(2)
+    with c1:
+        i["itaca_attivo"] = st.checkbox("ITACA attivo", value=bool(i.get("itaca_attivo", False)))
+        i["itaca_pct"] = st.number_input("Bonus ITACA (%)", 0.0, value=float(i.get("itaca_pct", 0)), step=.5)
+        it_opts = ["Verificato", "Da verificare oltre densità ordinaria", "Da verificare", "Non applicabile"]
+        cur = i.get("itaca_stato", "Da verificare"); i["itaca_stato"] = st.selectbox("Stato ITACA", it_opts, index=it_opts.index(cur) if cur in it_opts else 2)
+    with c2:
+        i["romani_attivo"] = st.checkbox("Decreto Romani attivo", value=bool(i.get("romani_attivo", False)))
+        i["romani_pct"] = st.number_input("Bonus Romani (%)", 0.0, value=float(i.get("romani_pct", 0)), step=.5)
+        ro_opts = ["Verificato", "Da verificare cumulabilità/applicabilità", "Da verificare", "Non applicabile"]
+        cur = i.get("romani_stato", "Da verificare"); i["romani_stato"] = st.selectbox("Stato Romani", ro_opts, index=ro_opts.index(cur) if cur in ro_opts else 2)
+    i["nota"] = st.text_area("Nota incentivi", i.get("nota", ""))
+    rr = calc_project(p); ur = rr["urbanistica"]
+    a, b, c = st.columns(3); a.metric("Bonus teorico", f'{fmt(ur["bonus_pct"])}%'); b.metric("Volume incentivato teorico", f'{fmt(ur["vol_incentivato"],0)} m³'); c.metric("Scarto vs progetto", f'{fmt(ur["vol_incentivato"]-ur["vol_progetto"],0)} m³')
+    st.warning("Le premialità restano scenari di verifica finché non è confermata la loro effettiva utilizzabilità sul caso specifico.")
 
 with tabs[8]:
-    st.markdown("### Report")
-    rr=calc(p)
-    pdf=make_pdf(p,rr,client_view=False)
-    st.download_button("Genera report PDF",data=pdf,file_name=f'{p["meta"]["name"]}_fattibilita.pdf',mime="application/pdf",use_container_width=True)
-    raw=json.dumps(p,ensure_ascii=False,indent=2).encode("utf-8")
-    st.download_button("Esporta progetto JSON",data=raw,file_name=f'{p["meta"]["name"]}.json',mime="application/json",use_container_width=True)
+    st.markdown("### Acquisizione / Permuta")
+    a = p["acquisizione"]; modes = ["Acquisto", "Permuta", "Mista"]
+    a["modalita"] = st.selectbox("Modalità", modes, index=modes.index(a.get("modalita")) if a.get("modalita") in modes else 0)
+    c1, c2, c3 = st.columns(3)
+    a["prezzo_acquisto"] = c1.number_input("Prezzo acquisto (€)", 0.0, value=float(a.get("prezzo_acquisto", 0)), step=10000.0)
+    a["permuta_pct"] = c2.slider("Permuta (% valore realizzato)", 0.0, 40.0, float(a.get("permuta_pct", 0)), .5)
+    a["cash_mista"] = c3.number_input("Cash in modalità mista (€)", 0.0, value=float(a.get("cash_mista", 0)), step=10000.0)
+    a["target_margin_pct"] = st.number_input("Margine obiettivo impresa (%)", 0.0, 50.0, float(a.get("target_margin_pct", 18)), .5)
+    a["usa_permuta_manuale"] = st.checkbox("Usa valore permuta manuale", value=bool(a.get("usa_permuta_manuale", False)))
+    if a["usa_permuta_manuale"]:
+        a["permuta_valore_manuale"] = st.number_input("Valore permuta manuale (€)", 0.0, value=float(a.get("permuta_valore_manuale", 0)), step=10000.0)
+    rr = calc_project(p); s = rr["scenari"]["probabile"]
+    c1, c2, c3 = st.columns(3); c1.metric("Permuta applicata", euro(s["permuta"])); c2.metric("Max acquisizione sostenibile", euro(s["max_acq"])); c3.metric("Permuta max teorica", f'{fmt(s["max_perm_pct"])}%')
+    if p.get("permuta_opzioni"):
+        st.markdown("#### Opzioni negoziali preimpostate")
+        rows = []
+        for op in p["permuta_opzioni"]:
+            val = float(op.get("valore_totale", 0)); margin = (s["ricavi"] - rr["costi"]["sviluppo"] - val) / s["ricavi"] * 100 if s["ricavi"] else 0
+            rows.append({"Opzione": op.get("nome"), "Composizione": op.get("descrizione"), "Valore riconosciuto": euro(val), "Margine teorico": f'{fmt(margin)}%'})
+        st.dataframe(rows, hide_index=True, use_container_width=True)
+
+with tabs[9]:
+    st.markdown("### Report e dati")
+    rr = calc_project(p)
+    st.download_button("Genera report PDF", data=make_pdf(p, rr), file_name=f'{slug(p["meta"]["name"])}_fattibilita.pdf', mime="application/pdf", use_container_width=True)
+    raw = json.dumps(p, ensure_ascii=False, indent=2).encode("utf-8")
+    st.download_button("Esporta progetto JSON", data=raw, file_name=f'{slug(p["meta"]["name"])}.json', mime="application/json", use_container_width=True)
+    all_raw = json.dumps(st.session_state.projects, ensure_ascii=False, indent=2).encode("utf-8")
+    st.download_button("Backup archivio progetti", data=all_raw, file_name="projects_backup.json", mime="application/json", use_container_width=True)
+    st.caption("Nota: su Streamlit Community Cloud la scrittura locale può non essere persistente dopo riavvii/redeploy. Il file data/projects.json nel repository resta la base durevole.")
 
 # ---------- persist ----------
-st.session_state.projects[st.session_state.current_project]=p
+st.session_state.projects[st.session_state.current_project] = p
 save_projects(st.session_state.projects)
