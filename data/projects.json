@@ -17,7 +17,19 @@
       "scala_ascensore_esclusi_mq_piano": 30.0,
       "altezza_urbanistica_m": 3.0,
       "pt_escluso_da_volume": true,
-      "sup_coperta_preliminare_mq": 223.06
+      "sup_coperta_preliminare_mq": 223.06,
+      "regime": "Fondiario / IED",
+      "st_mq": 320.0,
+      "sf_mq": 320.0,
+      "ift_mc_mq": 0.0,
+      "rc_pct": 0.0,
+      "piani_max": 3,
+      "standard_mq_ab": 0.0,
+      "parcheggi_mq_mc": 0.1,
+      "volume_approvato_m3": 0.0,
+      "volume_progetto_diretto_m3": 0.0,
+      "usa_volume_diretto": false,
+      "nota_urbanistica": "B2: Iff 5 mc/m²; H max 12 m. Verificare Rc preesistente, densità DM 1444/1968 e applicabilità delle premialità."
     },
     "programma": {
       "alloggi": 8,
@@ -50,7 +62,11 @@
       "spese_tecniche_pct": 8.0,
       "imprevisti_pct": 5.0,
       "oneri": 8787.66,
-      "iva_inclusa": false
+      "iva_inclusa": false,
+      "sistemazioni_esterne": 0.0,
+      "predisposizioni_lift": 0.0,
+      "finanziamento": 0.0,
+      "costo_sviluppo_override": 0.0
     },
     "incentivi": {
       "itaca_attivo": true,
@@ -66,7 +82,198 @@
       "prezzo_acquisto": 0.0,
       "permuta_pct": 22.0,
       "cash_mista": 0.0,
-      "target_margin_pct": 18.0
+      "target_margin_pct": 18.0,
+      "permuta_valore_manuale": 0.0,
+      "usa_permuta_manuale": false
+    },
+    "analisi": {
+      "modalita_ricavi": "Sintetico €/m²",
+      "alternativa_attiva": "Scenario base"
+    },
+    "mix_prodotti": [],
+    "alternative": {},
+    "permuta_opzioni": []
+  },
+  "AREA B3 - Via Toscani": {
+    "meta": {
+      "name": "AREA B3 - Via Toscani",
+      "comune": "Acquaviva delle Fonti",
+      "indirizzo": "Via Toscani",
+      "zona": "B3",
+      "tipologia_intervento": "Nuova costruzione",
+      "note": "Area con progetto convenzionato approvato. Scenario B ottimizzato per mix di prodotto e trattativa con impresa."
+    },
+    "urbanistica": {
+      "lotto_mq": 4870.47,
+      "regime": "Convenzionato / PUE",
+      "st_mq": 4870.47,
+      "sf_mq": 2880.58,
+      "ift_mc_mq": 2.06,
+      "iff_mc_mq": 3.0,
+      "rc_pct": 50.0,
+      "h_max_m": 12.0,
+      "piani_max": 3,
+      "standard_mq_ab": 9.0,
+      "parcheggi_mq_mc": 0.1,
+      "volume_approvato_m3": 8641.74,
+      "usa_volume_diretto": true,
+      "volume_progetto_diretto_m3": 8641.74,
+      "piani_residenziali": 3,
+      "sup_lorda_piano_mq": 960.19,
+      "scala_ascensore_esclusi_mq_piano": 0.0,
+      "altezza_urbanistica_m": 3.0,
+      "pt_escluso_da_volume": false,
+      "sup_coperta_preliminare_mq": 0.0,
+      "nota_urbanistica": "B3: Ift 2,06 mc/m²; Iff 3,00 mc/m²; Rc 50%; H max 12 m; max 3 piani; standard 9 m²/ab; parcheggi privati 1/10 m²/m³. Distinguere St/Sf e verificare cessioni, convenzione e volume assentito per tutti i corpi."
+    },
+    "programma": {
+      "alloggi": 26,
+      "box": 26,
+      "sup_commerciale_residenziale_mq": 2670.0,
+      "balconi_fisici_mq": 0.0,
+      "box_mq_totali": 520.0,
+      "qualita": "Medio",
+      "forma": "Normale"
+    },
+    "analisi": {
+      "modalita_ricavi": "Mix per tipologia",
+      "alternativa_attiva": "B - Mix ottimizzato"
+    },
+    "mix_prodotti": [
+      {
+        "tipologia": "Villa singola premium",
+        "n": 4,
+        "sup_media_mq": 135.0,
+        "prezzo_prudente": 380000.0,
+        "prezzo_probabile": 420000.0,
+        "prezzo_ottimistico": 460000.0,
+        "box_per_unita": 2.0,
+        "note": "A4; giardino/pertinenze importanti; posizioni migliori del lotto."
+      },
+      {
+        "tipologia": "Villetta a schiera",
+        "n": 6,
+        "sup_media_mq": 115.0,
+        "prezzo_prudente": 310000.0,
+        "prezzo_probabile": 330000.0,
+        "prezzo_ottimistico": 350000.0,
+        "box_per_unita": 2.0,
+        "note": "A4; giardino; predisposizione completa home-lift, ascensore non installato."
+      },
+      {
+        "tipologia": "Appartamento",
+        "n": 16,
+        "sup_media_mq": 90.0,
+        "prezzo_prudente": 210000.0,
+        "prezzo_probabile": 235000.0,
+        "prezzo_ottimistico": 260000.0,
+        "box_per_unita": 1.0,
+        "note": "Due piccoli corpi; ascensore; balconi/terrazze; PT con giardino e ultimi piani con terrazze."
+      }
+    ],
+    "mercato": {
+      "prezzo_mq_prudente": 2300.0,
+      "prezzo_mq_probabile": 2500.0,
+      "prezzo_mq_ottimistico": 2700.0,
+      "box_prudente": 25000.0,
+      "box_probabile": 27500.0,
+      "box_ottimistico": 30000.0
+    },
+    "costi": {
+      "demolizione": 0.0,
+      "strutture": 1200000.0,
+      "opere_edili": 1200000.0,
+      "impianti": 750000.0,
+      "finiture": 650000.0,
+      "serramenti": 250000.0,
+      "ascensore": 80000.0,
+      "predisposizioni_lift": 30000.0,
+      "fotovoltaico": 20000.0,
+      "sistemazioni_esterne": 170000.0,
+      "marciapiede": 0.0,
+      "allacci": 100000.0,
+      "spese_tecniche_pct": 8.0,
+      "imprevisti_pct": 5.0,
+      "oneri": 100000.0,
+      "finanziamento": 0.0,
+      "costo_sviluppo_override": 0.0,
+      "iva_inclusa": false
+    },
+    "incentivi": {
+      "itaca_attivo": false,
+      "itaca_pct": 0.0,
+      "itaca_stato": "Da verificare",
+      "romani_attivo": false,
+      "romani_pct": 0.0,
+      "romani_stato": "Da verificare",
+      "nota": "Per lo screening B3 si usa prudentemente il volume già approvato di 8.641,74 m³. Eventuali premialità non sono incluse nel valore base."
+    },
+    "acquisizione": {
+      "modalita": "Mista",
+      "prezzo_acquisto": 0.0,
+      "permuta_pct": 0.0,
+      "cash_mista": 500000.0,
+      "target_margin_pct": 18.0,
+      "permuta_valore_manuale": 470000.0,
+      "usa_permuta_manuale": true
+    },
+    "permuta_opzioni": [
+      {
+        "nome": "Opzione B · proposta iniziale",
+        "descrizione": "2 appartamenti + €500.000 cash",
+        "valore_totale": 970000.0
+      },
+      {
+        "nome": "Opzione A · concessione",
+        "descrizione": "1 villa premium + 1 appartamento + €350.000 cash",
+        "valore_totale": 1005000.0
+      }
+    ],
+    "alternative": {
+      "A - Progetto approvato · 18 villette": {
+        "costo_sviluppo": 6690000.0,
+        "mix_prodotti": [
+          {
+            "tipologia": "Villetta a schiera grande",
+            "n": 18,
+            "sup_media_mq": 160.0,
+            "prezzo_prudente": 340000.0,
+            "prezzo_probabile": 380000.0,
+            "prezzo_ottimistico": 420000.0,
+            "box_per_unita": 1.0,
+            "note": "Schema approvato con seminterrato e home-lift individuale."
+          }
+        ]
+      },
+      "B - Mix ottimizzato · 26 unità": {
+        "costo_sviluppo": 5130000.0,
+        "mix_prodotti": [
+          {
+            "tipologia": "Villa singola premium",
+            "n": 4,
+            "sup_media_mq": 135.0,
+            "prezzo_prudente": 380000.0,
+            "prezzo_probabile": 420000.0,
+            "prezzo_ottimistico": 460000.0
+          },
+          {
+            "tipologia": "Villetta a schiera",
+            "n": 6,
+            "sup_media_mq": 115.0,
+            "prezzo_prudente": 310000.0,
+            "prezzo_probabile": 330000.0,
+            "prezzo_ottimistico": 350000.0
+          },
+          {
+            "tipologia": "Appartamento",
+            "n": 16,
+            "sup_media_mq": 90.0,
+            "prezzo_prudente": 210000.0,
+            "prezzo_probabile": 235000.0,
+            "prezzo_ottimistico": 260000.0
+          }
+        ]
+      }
     }
   }
 }
