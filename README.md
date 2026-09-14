@@ -1,34 +1,41 @@
-# Oltreforma | Feasibility — V1
+# Oltreforma | Feasibility — V3.1
 
-Web app Streamlit per valutazioni preliminari immobiliari.
+Web app Streamlit per valutazioni preliminari di fattibilità immobiliare.
 
-## Funzioni V1
-- Archivio locale progetti
-- Nuovo progetto / duplicazione
-- Vista Studio
-- Vista Cliente / Impresa
-- Urbanistica: lotto, Iff, volume ordinario, volume progetto, esclusione scala/ascensore
-- Programma edilizio
-- Costi di sviluppo
-- Tre scenari di mercato: Prudente / Probabile / Ottimistico
-- Incentivi ITACA / Decreto Romani con stato di verifica
-- Acquisto / Permuta / Mista
-- Permuta di riferimento e massimo teorico sostenibile
-- Redditività e prezzo massimo sostenibile di acquisizione
-- Report PDF
-- Esportazione progetto JSON
-- Caso Via Matteotti precaricato
+## Novità V2
+- Urbanistica con St/Sf, Ift/Iff e regime Fondiario/Convenzionato.
+- Volume approvato/riferimento e volume progetto diretto o geometrico.
+- Product Mix multi-tipologia con tre scenari di prezzo.
+- Confronto alternative progettuali.
+- Costi estesi, predisposizioni home-lift, sistemazioni esterne e finanziamento.
+- Acquisizione/permuta con valore manuale e opzioni negoziali.
+- Preset Via Matteotti preservato e Area B3 - Via Toscani aggiunta.
+- Backup JSON dell'archivio progetti e report PDF V2.
 
-## Avvio in locale
-1. Installa Python 3.11 o superiore
-2. Apri il terminale nella cartella
-3. Esegui:
-   pip install -r requirements.txt
-   streamlit run app.py
+> Nota: su Streamlit Community Cloud la scrittura locale può non essere persistente dopo restart/redeploy. Il file `data/projects.json` nel repository è la base durevole dei preset.
 
-## Pubblicazione
-La cartella è pronta per essere messa su GitHub e pubblicata con Streamlit Community Cloud.
-Per uso professionale multi-dispositivo si consiglia una V2 con database cloud e autenticazione.
 
-## Nota
-Le premialità volumetriche sono gestite come scenari di verifica. L'app non sostituisce la verifica urbanistica, normativa, fiscale, strutturale o estimativa professionale.
+## Novità V3
+- Sismabonus 2026, incluso **Sismabonus acquisti** per demolizione + ricostruzione, attivabile/disattivabile.
+- Modulo **Detrazioni fiscali 2026** con Bonus casa, Ecobonus, Sismabonus, Bonus mobili, barriere architettoniche nell'ambito Bonus casa e acquisto di unità in edificio interamente ristrutturato.
+- Aliquote e massimali sono parametrizzati e modificabili; il modello distingue il beneficio fiscale dell'acquirente/contribuente dai ricavi dell'impresa.
+- In caso di permuta sono mostrati **valore, percentuale e superficie equivalente in m²**, con possibilità di inserire la superficie reale ceduta.
+- Avvisi per potenziale sovrapposizione dei massimali e per il limite complessivo alle detrazioni con redditi superiori a €75.000.
+- Report PDF aggiornato con superficie equivalente della permuta e totale teorico delle detrazioni attive.
+
+### Nota fiscale
+Il modulo è uno strumento preliminare di fattibilità e non sostituisce la verifica del commercialista/notaio né gli adempimenti tecnici e fiscali richiesti per la singola agevolazione.
+
+
+## Novità V3.1 — Costi parametrici
+- Modalità **Parametrico €/m²** impostata per screening rapido.
+- Preset modificabili:
+  - Manutenzione straordinaria leggera: 600 €/m²
+  - Ristrutturazione media: 950 €/m²
+  - Ristrutturazione pesante: 1.300 €/m²
+  - Demolizione + ricostruzione: 1.800 €/m²
+  - Nuova costruzione residenziale: 1.900 €/m²
+  - Nuova costruzione medio-alta: 2.200 €/m²
+- Possibilità di inserire superficie di riferimento, €/m² personalizzato ed extra non inclusi.
+- Restano separati spese tecniche, imprevisti, oneri e finanziamento.
+- La modalità **Dettagliato** resta disponibile per analisi più avanzate.
