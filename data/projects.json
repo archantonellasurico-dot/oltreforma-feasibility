@@ -75,7 +75,11 @@
       "romani_attivo": true,
       "romani_pct": 5.0,
       "romani_stato": "Da verificare cumulabilità/applicabilità",
-      "nota": "Le premialità sono scenari di verifica e non equivalgono automaticamente a volumetria assentibile."
+      "nota": "Le premialità sono scenari di verifica e non equivalgono automaticamente a volumetria assentibile.",
+      "sismabonus_disponibile": true,
+      "sismabonus_attivo": false,
+      "sismabonus_tipo_predefinito": "Sismabonus acquisti",
+      "sismabonus_stato": "Da verificare requisiti, zona sismica e qualificazione edilizia"
     },
     "acquisizione": {
       "modalita": "Permuta",
@@ -84,7 +88,23 @@
       "cash_mista": 0.0,
       "target_margin_pct": 18.0,
       "permuta_valore_manuale": 0.0,
-      "usa_permuta_manuale": false
+      "usa_permuta_manuale": false,
+      "permuta_superficie": {
+        "calcolo_attivo": true,
+        "modalita": "Automatica",
+        "base_valore": "Valore permuta corrente",
+        "valore_permuta_euro": 376750.0,
+        "prezzo_mq_riferimento_euro": 2500.0,
+        "superficie_equivalente_mq": 150.7,
+        "incidenza_su_superficie_residenziale_pct": 24.79,
+        "superficie_manual_mq": 0.0,
+        "usa_superficie_manuale": false,
+        "metodo_calcolo": "Valore permuta / prezzo medio probabile €/m²",
+        "mostra_in_dashboard": true,
+        "nota": "La superficie è un equivalente commerciale; se la permuta individua unità precise prevale la loro superficie effettiva.",
+        "usa_prezzo_mq_manuale": false,
+        "prezzo_mq_manuale_euro": 0.0
+      }
     },
     "analisi": {
       "modalita_ricavi": "Sintetico €/m²",
@@ -92,7 +112,125 @@
     },
     "mix_prodotti": [],
     "alternative": {},
-    "permuta_opzioni": []
+    "permuta_opzioni": [],
+    "agevolazioni_fiscali": {
+      "anno_riferimento": 2026,
+      "modalita_calcolo": "Teorico lordo; da validare sul contribuente e sul caso concreto",
+      "beneficiario": "Da definire",
+      "abitazione_principale": false,
+      "titolare_proprieta_o_diritto_reale": false,
+      "reddito_complessivo_euro": 0.0,
+      "figli_fiscalmente_a_carico": 0,
+      "applica_riordino_detrazioni_over_75000": true,
+      "nota_riordino_detrazioni": "Dal 2025, per redditi complessivi > 75.000 €, le spese detraibili sono soggette a un limite complessivo legato a reddito e figli a carico. Il motore dell'app deve mostrare la detrazione teorica e un avviso di possibile riduzione.",
+      "detrazioni": {
+        "bonus_casa": {
+          "attivo": false,
+          "nome": "Bonus ristrutturazioni / recupero patrimonio edilizio",
+          "valido_2026": true,
+          "aliquota_ordinaria_pct": 36.0,
+          "aliquota_ab_principale_pct": 50.0,
+          "massimale_spesa_per_unita_euro": 96000.0,
+          "quote_anni": 10,
+          "spesa_prevista_euro": 0.0,
+          "unita_agevolabili": 1,
+          "interventi_tipici": [
+            "manutenzione straordinaria",
+            "restauro e risanamento conservativo",
+            "ristrutturazione edilizia",
+            "manutenzione ordinaria su parti comuni condominiali"
+          ],
+          "nota": "Escludere la sostituzione con caldaie uniche alimentate a combustibili fossili."
+        },
+        "ecobonus": {
+          "attivo": false,
+          "nome": "Ecobonus / riqualificazione energetica",
+          "valido_2026": true,
+          "aliquota_ordinaria_pct": 36.0,
+          "aliquota_ab_principale_pct": 50.0,
+          "massimale_modalita": "Dipende dalla tipologia di intervento",
+          "massimale_spesa_euro": 0.0,
+          "quote_anni": 10,
+          "spesa_prevista_euro": 0.0,
+          "nota": "Il massimale va selezionato per singola categoria; esclusi gli interventi con caldaie uniche a combustibili fossili."
+        },
+        "sismabonus_interventi": {
+          "attivo": false,
+          "nome": "Sismabonus - interventi antisismici",
+          "valido_2026": true,
+          "disponibile_nel_tipo_intervento": true,
+          "zone_sismiche_ammesse": [
+            1,
+            2,
+            3
+          ],
+          "aliquota_ordinaria_pct": 36.0,
+          "aliquota_ab_principale_pct": 50.0,
+          "massimale_spesa_per_unita_euro": 96000.0,
+          "massimale_condiviso_con_bonus_casa": true,
+          "quote_anni": 5,
+          "spesa_prevista_euro": 0.0,
+          "unita_agevolabili": 1,
+          "nota": "Verificare classificazione sismica del Comune, titolo/procedura e qualificazione edilizia dell'intervento."
+        },
+        "sismabonus_acquisti": {
+          "attivo": false,
+          "nome": "Sismabonus acquisti - demolizione e ricostruzione",
+          "valido_2026": true,
+          "disponibile_nel_tipo_intervento": true,
+          "zone_sismiche_ammesse": [
+            1,
+            2,
+            3
+          ],
+          "aliquota_ordinaria_pct": 36.0,
+          "aliquota_ab_principale_pct": 50.0,
+          "massimale_base_per_unita_euro": 96000.0,
+          "quote_anni": 5,
+          "termine_vendita_mesi_da_fine_lavori": 30,
+          "beneficio_economico_di": "Acquirente",
+          "impatto_business_plan_impresa": "Vantaggio commerciale; non conteggiare come ricavo diretto dell'impresa",
+          "prezzo_vendita_unita_euro": 0.0,
+          "nota": "Da attivare solo se ricorrono i requisiti del Sismabonus acquisti e l'intervento è qualificato correttamente."
+        },
+        "bonus_mobili": {
+          "attivo": false,
+          "nome": "Bonus mobili ed elettrodomestici",
+          "valido_2026": true,
+          "aliquota_pct": 50.0,
+          "massimale_spesa_euro": 5000.0,
+          "quote_anni": 10,
+          "spesa_prevista_euro": 0.0,
+          "richiede_intervento_recupero_edilizio": true,
+          "anno_inizio_lavori_minimo_per_acquisti_2026": 2025,
+          "nota": "Agevolazione collegata a un intervento di recupero edilizio; verificare data di inizio lavori e requisiti dei beni."
+        },
+        "barriere_architettoniche_via_bonus_casa": {
+          "attivo": false,
+          "nome": "Eliminazione barriere architettoniche - nell'ambito Bonus casa",
+          "valido_2026": true,
+          "aliquota_ordinaria_pct": 36.0,
+          "aliquota_ab_principale_pct": 50.0,
+          "massimale_condiviso_con_bonus_casa": true,
+          "quote_anni": 10,
+          "spesa_prevista_euro": 0.0,
+          "nota": "Il bonus autonomo al 75% non è considerato vigente per spese 2026; l'intervento può rientrare nel Bonus casa se ne ricorrono i requisiti."
+        },
+        "acquisto_immobile_ristrutturato": {
+          "attivo": false,
+          "nome": "Acquisto di unità in edificio interamente ristrutturato",
+          "valido_2026": true,
+          "aliquota_ordinaria_pct": 36.0,
+          "aliquota_ab_principale_pct": 50.0,
+          "base_forfettaria_pct_prezzo_acquisto": 25.0,
+          "massimale_spesa_per_unita_euro": 96000.0,
+          "quote_anni": 10,
+          "beneficio_economico_di": "Acquirente",
+          "prezzo_acquisto_unita_euro": 0.0,
+          "nota": "Per edifici interamente ristrutturati da impresa/cooperativa e successivamente venduti/assegnati; verificare condizioni temporali e soggettive."
+        }
+      }
+    }
   },
   "AREA B3 - Via Toscani": {
     "meta": {
@@ -206,7 +344,11 @@
       "romani_attivo": false,
       "romani_pct": 0.0,
       "romani_stato": "Da verificare",
-      "nota": "Per lo screening B3 si usa prudentemente il volume già approvato di 8.641,74 m³. Eventuali premialità non sono incluse nel valore base."
+      "nota": "Per lo screening B3 si usa prudentemente il volume già approvato di 8.641,74 m³. Eventuali premialità non sono incluse nel valore base.",
+      "sismabonus_disponibile": false,
+      "sismabonus_attivo": false,
+      "sismabonus_tipo_predefinito": "",
+      "sismabonus_stato": "Non previsto nel caso base di nuova costruzione"
     },
     "acquisizione": {
       "modalita": "Mista",
@@ -215,7 +357,23 @@
       "cash_mista": 500000.0,
       "target_margin_pct": 18.0,
       "permuta_valore_manuale": 470000.0,
-      "usa_permuta_manuale": true
+      "usa_permuta_manuale": true,
+      "permuta_superficie": {
+        "calcolo_attivo": true,
+        "modalita": "Automatica",
+        "base_valore": "Valore permuta corrente",
+        "valore_permuta_euro": 470000.0,
+        "prezzo_mq_riferimento_euro": 2779.03,
+        "superficie_equivalente_mq": 180.0,
+        "incidenza_su_superficie_residenziale_pct": 6.74,
+        "superficie_manual_mq": 180.0,
+        "usa_superficie_manuale": true,
+        "metodo_calcolo": "Composizione attuale della permuta: 2 appartamenti × 90 m²",
+        "mostra_in_dashboard": true,
+        "nota": "Opzione attuale: 2 appartamenti × 90 m² = 180 m², oltre alla quota cash impostata.",
+        "usa_prezzo_mq_manuale": false,
+        "prezzo_mq_manuale_euro": 0.0
+      }
     },
     "permuta_opzioni": [
       {
@@ -273,6 +431,124 @@
             "prezzo_ottimistico": 260000.0
           }
         ]
+      }
+    },
+    "agevolazioni_fiscali": {
+      "anno_riferimento": 2026,
+      "modalita_calcolo": "Teorico lordo; da validare sul contribuente e sul caso concreto",
+      "beneficiario": "Da definire",
+      "abitazione_principale": false,
+      "titolare_proprieta_o_diritto_reale": false,
+      "reddito_complessivo_euro": 0.0,
+      "figli_fiscalmente_a_carico": 0,
+      "applica_riordino_detrazioni_over_75000": true,
+      "nota_riordino_detrazioni": "Dal 2025, per redditi complessivi > 75.000 €, le spese detraibili sono soggette a un limite complessivo legato a reddito e figli a carico. Il motore dell'app deve mostrare la detrazione teorica e un avviso di possibile riduzione.",
+      "detrazioni": {
+        "bonus_casa": {
+          "attivo": false,
+          "nome": "Bonus ristrutturazioni / recupero patrimonio edilizio",
+          "valido_2026": true,
+          "aliquota_ordinaria_pct": 36.0,
+          "aliquota_ab_principale_pct": 50.0,
+          "massimale_spesa_per_unita_euro": 96000.0,
+          "quote_anni": 10,
+          "spesa_prevista_euro": 0.0,
+          "unita_agevolabili": 1,
+          "interventi_tipici": [
+            "manutenzione straordinaria",
+            "restauro e risanamento conservativo",
+            "ristrutturazione edilizia",
+            "manutenzione ordinaria su parti comuni condominiali"
+          ],
+          "nota": "Escludere la sostituzione con caldaie uniche alimentate a combustibili fossili."
+        },
+        "ecobonus": {
+          "attivo": false,
+          "nome": "Ecobonus / riqualificazione energetica",
+          "valido_2026": true,
+          "aliquota_ordinaria_pct": 36.0,
+          "aliquota_ab_principale_pct": 50.0,
+          "massimale_modalita": "Dipende dalla tipologia di intervento",
+          "massimale_spesa_euro": 0.0,
+          "quote_anni": 10,
+          "spesa_prevista_euro": 0.0,
+          "nota": "Il massimale va selezionato per singola categoria; esclusi gli interventi con caldaie uniche a combustibili fossili."
+        },
+        "sismabonus_interventi": {
+          "attivo": false,
+          "nome": "Sismabonus - interventi antisismici",
+          "valido_2026": true,
+          "disponibile_nel_tipo_intervento": false,
+          "zone_sismiche_ammesse": [
+            1,
+            2,
+            3
+          ],
+          "aliquota_ordinaria_pct": 36.0,
+          "aliquota_ab_principale_pct": 50.0,
+          "massimale_spesa_per_unita_euro": 96000.0,
+          "massimale_condiviso_con_bonus_casa": true,
+          "quote_anni": 5,
+          "spesa_prevista_euro": 0.0,
+          "unita_agevolabili": 1,
+          "nota": "Verificare classificazione sismica del Comune, titolo/procedura e qualificazione edilizia dell'intervento."
+        },
+        "sismabonus_acquisti": {
+          "attivo": false,
+          "nome": "Sismabonus acquisti - demolizione e ricostruzione",
+          "valido_2026": true,
+          "disponibile_nel_tipo_intervento": false,
+          "zone_sismiche_ammesse": [
+            1,
+            2,
+            3
+          ],
+          "aliquota_ordinaria_pct": 36.0,
+          "aliquota_ab_principale_pct": 50.0,
+          "massimale_base_per_unita_euro": 96000.0,
+          "quote_anni": 5,
+          "termine_vendita_mesi_da_fine_lavori": 30,
+          "beneficio_economico_di": "Acquirente",
+          "impatto_business_plan_impresa": "Vantaggio commerciale; non conteggiare come ricavo diretto dell'impresa",
+          "prezzo_vendita_unita_euro": 0.0,
+          "nota": "Da attivare solo se ricorrono i requisiti del Sismabonus acquisti e l'intervento è qualificato correttamente."
+        },
+        "bonus_mobili": {
+          "attivo": false,
+          "nome": "Bonus mobili ed elettrodomestici",
+          "valido_2026": true,
+          "aliquota_pct": 50.0,
+          "massimale_spesa_euro": 5000.0,
+          "quote_anni": 10,
+          "spesa_prevista_euro": 0.0,
+          "richiede_intervento_recupero_edilizio": true,
+          "anno_inizio_lavori_minimo_per_acquisti_2026": 2025,
+          "nota": "Agevolazione collegata a un intervento di recupero edilizio; verificare data di inizio lavori e requisiti dei beni."
+        },
+        "barriere_architettoniche_via_bonus_casa": {
+          "attivo": false,
+          "nome": "Eliminazione barriere architettoniche - nell'ambito Bonus casa",
+          "valido_2026": true,
+          "aliquota_ordinaria_pct": 36.0,
+          "aliquota_ab_principale_pct": 50.0,
+          "massimale_condiviso_con_bonus_casa": true,
+          "quote_anni": 10,
+          "spesa_prevista_euro": 0.0,
+          "nota": "Il bonus autonomo al 75% non è considerato vigente per spese 2026; l'intervento può rientrare nel Bonus casa se ne ricorrono i requisiti."
+        },
+        "acquisto_immobile_ristrutturato": {
+          "attivo": false,
+          "nome": "Acquisto di unità in edificio interamente ristrutturato",
+          "valido_2026": true,
+          "aliquota_ordinaria_pct": 36.0,
+          "aliquota_ab_principale_pct": 50.0,
+          "base_forfettaria_pct_prezzo_acquisto": 25.0,
+          "massimale_spesa_per_unita_euro": 96000.0,
+          "quote_anni": 10,
+          "beneficio_economico_di": "Acquirente",
+          "prezzo_acquisto_unita_euro": 0.0,
+          "nota": "Per edifici interamente ristrutturati da impresa/cooperativa e successivamente venduti/assegnati; verificare condizioni temporali e soggettive."
+        }
       }
     }
   }
