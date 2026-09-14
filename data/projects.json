@@ -66,7 +66,12 @@
       "sistemazioni_esterne": 0.0,
       "predisposizioni_lift": 0.0,
       "finanziamento": 0.0,
-      "costo_sviluppo_override": 0.0
+      "costo_sviluppo_override": 0.0,
+      "modalita_costi": "Parametrico €/m²",
+      "tipologia_costo_parametrico": "Demolizione + ricostruzione",
+      "superficie_costo_mq": 608.0,
+      "costo_parametrico_mq": 1800.0,
+      "extra_parametrici": 0.0
     },
     "incentivi": {
       "itaca_attivo": true,
@@ -335,7 +340,12 @@
       "oneri": 100000.0,
       "finanziamento": 0.0,
       "costo_sviluppo_override": 0.0,
-      "iva_inclusa": false
+      "iva_inclusa": false,
+      "modalita_costi": "Parametrico €/m²",
+      "tipologia_costo_parametrico": "Nuova costruzione residenziale",
+      "superficie_costo_mq": 2670.0,
+      "costo_parametrico_mq": 1900.0,
+      "extra_parametrici": 0.0
     },
     "incentivi": {
       "itaca_attivo": false,
