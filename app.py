@@ -84,6 +84,159 @@ def default_product(name="Appartamento"):
     }
 
 
+def deep_defaults(target, defaults):
+    """Aggiunge chiavi mancanti senza sovrascrivere i dati già presenti."""
+    for k, v in defaults.items():
+        if k not in target:
+            target[k] = copy.deepcopy(v)
+        elif isinstance(v, dict) and isinstance(target.get(k), dict):
+            deep_defaults(target[k], v)
+    return target
+
+
+def default_permuta_surface():
+    return {
+        "calcolo_attivo": True,
+        "usa_superficie_manuale": False,
+        "superficie_manual_mq": 0.0,
+        "usa_prezzo_mq_manuale": False,
+        "prezzo_mq_manuale_euro": 0.0,
+        "nota": "Superficie equivalente commerciale; se la permuta individua unità precise prevale la superficie effettiva."
+    }
+
+
+def default_tax_reliefs():
+    """Archivio parametrico 2026. Le aliquote restano modificabili dall'utente."""
+    return {
+        "anno_riferimento": 2026,
+        "abitazione_principale": False,
+        "titolare_proprieta_o_diritto_reale": False,
+        "reddito_complessivo_euro": 0.0,
+        "figli_fiscalmente_a_carico": 0,
+        "applica_limite_detrazioni_over_75000": True,
+        "note": (
+            "Calcolo preliminare lordo. La spettanza effettiva dipende dal soggetto, dal titolo, "
+            "dall'intervento, dalla capienza fiscale e dagli adempimenti richiesti."
+        ),
+        "detrazioni": {
+            "bonus_casa": {
+                "nome": "Bonus ristrutturazioni / recupero edilizio",
+                "attivo": False,
+                "aliquota_ordinaria_pct": 36.0,
+                "aliquota_ab_principale_pct": 50.0,
+                "usa_aliquota_manuale": False,
+                "aliquota_manuale_pct": 36.0,
+                "massimale_spesa_per_unita_euro": 96000.0,
+                "spesa_prevista_euro": 0.0,
+                "unita_agevolabili": 1,
+                "quote_anni": 10,
+                "categoria": "Ristrutturazione / manutenzione straordinaria",
+                "nota": "Massimale di €96.000 per unità; verificare eventuale condivisione del plafond con altri interventi di recupero."
+            },
+            "ecobonus": {
+                "nome": "Ecobonus / riqualificazione energetica",
+                "attivo": False,
+                "aliquota_ordinaria_pct": 36.0,
+                "aliquota_ab_principale_pct": 50.0,
+                "usa_aliquota_manuale": False,
+                "aliquota_manuale_pct": 36.0,
+                "massimale_spesa_per_unita_euro": 0.0,
+                "spesa_prevista_euro": 0.0,
+                "unita_agevolabili": 1,
+                "quote_anni": 10,
+                "categoria": "Efficienza energetica",
+                "nota": "Il limite varia per tipologia: impostare il massimale specifico del caso. Escluse caldaie uniche a combustibili fossili."
+            },
+            "sismabonus_interventi": {
+                "nome": "Sismabonus interventi antisismici",
+                "attivo": False,
+                "aliquota_ordinaria_pct": 36.0,
+                "aliquota_ab_principale_pct": 50.0,
+                "usa_aliquota_manuale": False,
+                "aliquota_manuale_pct": 36.0,
+                "massimale_spesa_per_unita_euro": 96000.0,
+                "spesa_prevista_euro": 0.0,
+                "unita_agevolabili": 1,
+                "quote_anni": 5,
+                "categoria": "Interventi antisismici",
+                "zona_sismica": 0,
+                "nota": "Zone 1, 2 e 3. Verificare asseverazioni, titolo edilizio e qualificazione dell'intervento."
+            },
+            "sismabonus_acquisti": {
+                "nome": "Sismabonus acquisti · demolizione e ricostruzione",
+                "attivo": False,
+                "aliquota_ordinaria_pct": 36.0,
+                "aliquota_ab_principale_pct": 50.0,
+                "usa_aliquota_manuale": False,
+                "aliquota_manuale_pct": 36.0,
+                "massimale_spesa_per_unita_euro": 96000.0,
+                "spesa_prevista_euro": 0.0,
+                "unita_agevolabili": 1,
+                "quote_anni": 5,
+                "categoria": "Acquisto unità antisismiche",
+                "zona_sismica": 0,
+                "beneficiario": "Acquirente",
+                "nota": (
+                    "Per unità in edifici demoliti e ricostruiti da impresa nelle zone sismiche 1, 2 o 3. "
+                    "È un vantaggio fiscale dell'acquirente, non un ricavo diretto dell'impresa."
+                )
+            },
+            "bonus_mobili": {
+                "nome": "Bonus mobili ed elettrodomestici",
+                "attivo": False,
+                "aliquota_pct": 50.0,
+                "usa_aliquota_manuale": False,
+                "aliquota_manuale_pct": 50.0,
+                "massimale_spesa_per_unita_euro": 5000.0,
+                "spesa_prevista_euro": 0.0,
+                "unita_agevolabili": 1,
+                "quote_anni": 10,
+                "categoria": "Arredi collegati a recupero edilizio",
+                "nota": "Collegato a un intervento di recupero edilizio; verificare data di inizio lavori e requisiti dei beni."
+            },
+            "barriere_bonus_casa": {
+                "nome": "Eliminazione barriere architettoniche · Bonus casa",
+                "attivo": False,
+                "aliquota_ordinaria_pct": 36.0,
+                "aliquota_ab_principale_pct": 50.0,
+                "usa_aliquota_manuale": False,
+                "aliquota_manuale_pct": 36.0,
+                "massimale_spesa_per_unita_euro": 96000.0,
+                "spesa_prevista_euro": 0.0,
+                "unita_agevolabili": 1,
+                "quote_anni": 10,
+                "categoria": "Recupero edilizio",
+                "nota": "Nel 2026 viene trattato qui nell'ambito del Bonus casa; attenzione al plafond condiviso di €96.000."
+            },
+            "acquisto_immobile_ristrutturato": {
+                "nome": "Acquisto unità in edificio interamente ristrutturato",
+                "attivo": False,
+                "aliquota_ordinaria_pct": 36.0,
+                "aliquota_ab_principale_pct": 50.0,
+                "usa_aliquota_manuale": False,
+                "aliquota_manuale_pct": 36.0,
+                "massimale_spesa_per_unita_euro": 96000.0,
+                "spesa_prevista_euro": 0.0,
+                "unita_agevolabili": 1,
+                "base_forfettaria_pct": 25.0,
+                "quote_anni": 10,
+                "categoria": "Acquisto da impresa/cooperativa",
+                "beneficiario": "Acquirente",
+                "nota": "La base è il 25% del prezzo di acquisto, entro il limite per unità. Verificare condizioni e termini di vendita."
+            }
+        }
+    }
+
+
+def merge_tax_relief_defaults(p):
+    deep_defaults(p.setdefault("agevolazioni_fiscali", {}), default_tax_reliefs())
+    deep_defaults(p.setdefault("acquisizione", {}).setdefault("permuta_superficie", {}), default_permuta_surface())
+    i = p.setdefault("incentivi", {})
+    i.setdefault("sismabonus_attivo", False)
+    i.setdefault("sismabonus_stato", "Da verificare requisiti fiscali e tecnici")
+    return p
+
+
 def legacy_to_v2(p):
     """Rende i vecchi progetti V1 compatibili senza perdere i dati."""
     p = copy.deepcopy(p)
@@ -128,6 +281,7 @@ def legacy_to_v2(p):
     a.setdefault("target_margin_pct", 18.0)
     a.setdefault("permuta_valore_manuale", 0.0)
     a.setdefault("usa_permuta_manuale", False)
+    merge_tax_relief_defaults(p)
     return p
 
 
@@ -292,6 +446,95 @@ def total_sale_area(p):
     return float(p.get("programma", {}).get("sup_commerciale_residenziale_mq", 0))
 
 
+def probable_price_per_mq(p):
+    """Prezzo medio probabile usato solo per tradurre la permuta in m² equivalenti."""
+    mode = p.get("analisi", {}).get("modalita_ricavi", "Sintetico €/m²")
+    ps = p.get("acquisizione", {}).get("permuta_superficie", {})
+    if ps.get("usa_prezzo_mq_manuale", False) and float(ps.get("prezzo_mq_manuale_euro", 0)) > 0:
+        return float(ps["prezzo_mq_manuale_euro"])
+    if mode == "Mix per tipologia" and p.get("mix_prodotti"):
+        area = total_sale_area(p)
+        value, _ = calc_mix_revenue(p["mix_prodotti"], "probabile")
+        return value / area if area else 0.0
+    return float(p.get("mercato", {}).get("prezzo_mq_probabile", 0))
+
+
+def calc_permuta_surface(p, permuta_value=None):
+    a = p.get("acquisizione", {})
+    ps = a.get("permuta_superficie", {})
+    if a.get("modalita") not in ["Permuta", "Mista"] or not ps.get("calcolo_attivo", True):
+        return {"valore": 0.0, "prezzo_mq": 0.0, "superficie_mq": 0.0, "manuale": False}
+    if permuta_value is None:
+        rr = calc_project(p)
+        permuta_value = rr["scenari"]["probabile"]["permuta"]
+    if ps.get("usa_superficie_manuale", False) and float(ps.get("superficie_manual_mq", 0)) > 0:
+        mq = float(ps["superficie_manual_mq"])
+        price = float(permuta_value) / mq if mq else 0.0
+        return {"valore": float(permuta_value), "prezzo_mq": price, "superficie_mq": mq, "manuale": True}
+    price = probable_price_per_mq(p)
+    mq = float(permuta_value) / price if price else 0.0
+    return {"valore": float(permuta_value), "prezzo_mq": price, "superficie_mq": mq, "manuale": False}
+
+
+def calc_tax_reliefs(p):
+    f = p.get("agevolazioni_fiscali", {})
+    dets = f.get("detrazioni", {})
+    main_home = bool(f.get("abitazione_principale", False)) and bool(f.get("titolare_proprieta_o_diritto_reale", False))
+    tipo = p.get("meta", {}).get("tipologia_intervento", "")
+    rows, warnings = [], []
+    total = 0.0
+
+    active_keys = [k for k, d in dets.items() if d.get("attivo", False)]
+    if "sismabonus_interventi" in active_keys and "sismabonus_acquisti" in active_keys:
+        warnings.append("Sismabonus interventi e Sismabonus acquisti sono alternativi sul medesimo intervento: non sommare i due benefici.")
+    shared = {"bonus_casa", "sismabonus_interventi", "barriere_bonus_casa"}
+    if len(shared.intersection(active_keys)) > 1:
+        warnings.append("Più voci usano il plafond recupero edilizio/sismico da €96.000 per unità: verificare il massimale condiviso per evitare doppio conteggio.")
+
+    for key, d in dets.items():
+        if not d.get("attivo", False):
+            continue
+        if key == "sismabonus_acquisti" and "Demolizione" not in tipo:
+            warnings.append("Sismabonus acquisti attivo ma il progetto non è classificato come demolizione + ricostruzione.")
+        if key.startswith("sismabonus") and int(d.get("zona_sismica", 0) or 0) not in [1, 2, 3]:
+            warnings.append(f'{d.get("nome","Sismabonus")}: indicare/verificare zona sismica 1, 2 o 3.')
+
+        if d.get("usa_aliquota_manuale", False):
+            rate = float(d.get("aliquota_manuale_pct", 0))
+        elif "aliquota_pct" in d:
+            rate = float(d.get("aliquota_pct", 0))
+        else:
+            rate = float(d.get("aliquota_ab_principale_pct" if main_home else "aliquota_ordinaria_pct", 0))
+
+        units = max(int(d.get("unita_agevolabili", 1)), 1)
+        raw = float(d.get("spesa_prevista_euro", 0))
+        if key == "acquisto_immobile_ristrutturato":
+            raw = raw * float(d.get("base_forfettaria_pct", 25)) / 100
+
+        cap_unit = float(d.get("massimale_spesa_per_unita_euro", 0))
+        cap = cap_unit * units if cap_unit > 0 else 0.0
+        base = min(raw, cap) if cap > 0 else raw
+        benefit = base * rate / 100
+        years = max(int(d.get("quote_anni", 1)), 1)
+        annual = benefit / years
+        total += benefit
+        rows.append({
+            "key": key,
+            "nome": d.get("nome", key),
+            "spesa": float(d.get("spesa_prevista_euro", 0)),
+            "base": base,
+            "aliquota": rate,
+            "beneficio": benefit,
+            "anni": years,
+            "quota_annua": annual,
+            "beneficiario": d.get("beneficiario", "Contribuente"),
+        })
+
+    if f.get("applica_limite_detrazioni_over_75000", True) and float(f.get("reddito_complessivo_euro", 0)) > 75000 and total > 0:
+        warnings.append("Reddito complessivo oltre €75.000: il totale teorico può essere ridotto dal limite complessivo alle detrazioni. Verificare il calcolo fiscale personale.")
+    return {"totale_teorico": total, "rows": rows, "warnings": warnings, "main_home_rate": main_home}
+
+
 def make_pdf(p, r):
     bio = io.BytesIO(); c = canvas.Canvas(bio, pagesize=A4); W, H = A4
     def txt(x, y, t, size=10, bold=False, col=colors.HexColor("#20242a")):
@@ -321,7 +564,14 @@ def make_pdf(p, r):
     txt(55, y, f'Valore commerciale: {euro(s["ricavi"])}'); y -= 14
     txt(55, y, f'Costo sviluppo prima acquisizione: {euro(r["costi"]["sviluppo"])}'); y -= 14
     txt(55, y, f'Utile dopo acquisizione/permuta impostata: {euro(s["utile"])}'); y -= 14
-    txt(55, y, f'Margine: {fmt(s["margine"])}%  |  Max acquisizione al target: {euro(s["max_acq"])}'); y -= 22
+    txt(55, y, f'Margine: {fmt(s["margine"])}%  |  Max acquisizione al target: {euro(s["max_acq"])}'); y -= 14
+    if p.get("acquisizione", {}).get("modalita") in ["Permuta", "Mista"]:
+        ps_pdf = calc_permuta_surface(p, s["permuta"])
+        txt(55, y, f'Permuta: {euro(s["permuta"])}  |  Superficie equivalente: {fmt(ps_pdf["superficie_mq"],1)} m²', 8); y -= 14
+    tx_pdf = calc_tax_reliefs(p)
+    if tx_pdf["rows"]:
+        txt(55, y, f'Detrazioni fiscali attive · beneficio teorico contribuente/acquirente: {euro(tx_pdf["totale_teorico"])}', 8); y -= 14
+    y -= 8
 
     if p.get("alternative"):
         txt(45, y, "Confronto alternative – scenario probabile", 11, True); y -= 17
@@ -395,6 +645,19 @@ if st.session_state.view_mode == "Vista Cliente / Impresa":
     c3.metric("Residuo prima del suolo", euro(prob["ricavi"] - r["costi"]["sviluppo"]))
     c4.metric("Max acquisizione al target", euro(prob["max_acq"]))
 
+    if p.get("acquisizione", {}).get("modalita") in ["Permuta", "Mista"]:
+        ps_client = calc_permuta_surface(p, prob["permuta"])
+        st.markdown("### Permuta")
+        pc1, pc2 = st.columns(2)
+        pc1.metric("Valore riconosciuto", euro(prob["permuta"]))
+        pc2.metric("Superficie equivalente", f'{fmt(ps_client["superficie_mq"],1)} m²')
+
+    tx_client = calc_tax_reliefs(p)
+    if tx_client["rows"]:
+        st.markdown("### Agevolazioni fiscali attivate")
+        st.metric("Beneficio fiscale teorico complessivo", euro(tx_client["totale_teorico"]))
+        st.caption("Valore informativo riferito al contribuente/acquirente; non costituisce ricavo diretto dell'impresa.")
+
     if p.get("alternative"):
         st.markdown("### Confronto alternative")
         rows = []
@@ -420,7 +683,7 @@ if st.session_state.view_mode == "Vista Cliente / Impresa":
     st.stop()
 
 # ---------- Studio tabs ----------
-tabs = st.tabs(["Dashboard", "Immobile", "Urbanistica", "Product Mix", "Costi", "Mercato", "Alternative", "Incentivi", "Acquisizione / Permuta", "Report"])
+tabs = st.tabs(["Dashboard", "Immobile", "Urbanistica", "Product Mix", "Costi", "Mercato", "Alternative", "Incentivi", "Detrazioni 2026", "Acquisizione / Permuta", "Report"])
 
 with tabs[0]:
     st.markdown("### Dashboard Studio")
@@ -445,6 +708,21 @@ with tabs[0]:
             rows.append({"Alternativa": name, "Ricavi": euro(ar["ricavi"]), "Costo": euro(ar["costo"]), "Residuo pre-suolo": euro(ar["residuo"]), "Margine pre-suolo": f'{fmt(ar["margine_pre_land"])}%', "Max suolo/permuta target": euro(ar["max_land"])})
         st.dataframe(rows, hide_index=True, use_container_width=True)
 
+    # Sintesi permuta e agevolazioni fiscali
+    rr_dash = calc_project(p)
+    if p.get("acquisizione", {}).get("modalita") in ["Permuta", "Mista"]:
+        ps_dash = calc_permuta_surface(p, rr_dash["scenari"]["probabile"]["permuta"])
+        q1, q2, q3 = st.columns(3)
+        q1.metric("Permuta · valore probabile", euro(ps_dash["valore"]))
+        q2.metric("Permuta · superficie equivalente", f'{fmt(ps_dash["superficie_mq"],1)} m²')
+        q3.metric("Valore €/m² usato", euro(ps_dash["prezzo_mq"]))
+    tax_dash = calc_tax_reliefs(p)
+    if tax_dash["rows"]:
+        st.markdown("#### Agevolazioni fiscali attive · stima lorda")
+        t1, t2 = st.columns(2)
+        t1.metric("Benefici fiscali teorici", euro(tax_dash["totale_teorico"]))
+        t2.caption("Benefici del contribuente/acquirente: non vengono sommati automaticamente ai ricavi dell'impresa.")
+
 with tabs[1]:
     st.markdown("### Immobile")
     c1, c2 = st.columns(2)
@@ -454,7 +732,7 @@ with tabs[1]:
         p["meta"]["indirizzo"] = st.text_input("Indirizzo", p["meta"]["indirizzo"])
     with c2:
         p["meta"]["zona"] = st.text_input("Zona urbanistica", p["meta"]["zona"])
-        opts = ["Demolizione + ricostruzione", "Nuova costruzione", "Ristrutturazione"]
+        opts = ["Demolizione + ricostruzione", "Nuova costruzione", "Ristrutturazione", "Manutenzione straordinaria"]
         cur = p["meta"].get("tipologia_intervento", opts[0]); p["meta"]["tipologia_intervento"] = st.selectbox("Intervento", opts, index=opts.index(cur) if cur in opts else 0)
         p["meta"]["note"] = st.text_area("Note", p["meta"].get("note", ""))
 
@@ -606,8 +884,163 @@ with tabs[7]:
     rr = calc_project(p); ur = rr["urbanistica"]
     a, b, c = st.columns(3); a.metric("Bonus teorico", f'{fmt(ur["bonus_pct"])}%'); b.metric("Volume incentivato teorico", f'{fmt(ur["vol_incentivato"],0)} m³'); c.metric("Scarto vs progetto", f'{fmt(ur["vol_incentivato"]-ur["vol_progetto"],0)} m³')
     st.warning("Le premialità restano scenari di verifica finché non è confermata la loro effettiva utilizzabilità sul caso specifico.")
+    if p["meta"].get("tipologia_intervento") == "Demolizione + ricostruzione":
+        st.markdown("#### Sismabonus · screening")
+        i["sismabonus_attivo"] = st.checkbox(
+            "Considera il Sismabonus nell'analisi fiscale",
+            value=bool(i.get("sismabonus_attivo", False)),
+            help="Attiva lo screening fiscale; il beneficio viene poi parametrizzato nella scheda Detrazioni 2026."
+        )
+        i["sismabonus_stato"] = st.selectbox(
+            "Stato verifica Sismabonus",
+            ["Da verificare requisiti fiscali e tecnici", "Potenzialmente applicabile", "Verificato", "Non applicabile"],
+            index=(["Da verificare requisiti fiscali e tecnici", "Potenzialmente applicabile", "Verificato", "Non applicabile"].index(i.get("sismabonus_stato"))
+                   if i.get("sismabonus_stato") in ["Da verificare requisiti fiscali e tecnici", "Potenzialmente applicabile", "Verificato", "Non applicabile"] else 0)
+        )
+        st.info("Per demolizione + ricostruzione l'app gestisce sia Sismabonus interventi sia Sismabonus acquisti. Sullo stesso intervento vanno verificati alternatività, zona sismica, asseverazioni e requisiti del soggetto.")
 
 with tabs[8]:
+    st.markdown("### Detrazioni fiscali 2026")
+    f = p.setdefault("agevolazioni_fiscali", {})
+    deep_defaults(f, default_tax_reliefs())
+    st.caption(
+        "Modulo preliminare attivabile voce per voce. Le aliquote 2026 sono preimpostate, "
+        "ma restano modificabili per gestire casi particolari o futuri aggiornamenti."
+    )
+
+    g1, g2, g3 = st.columns(3)
+    f["abitazione_principale"] = g1.checkbox(
+        "Immobile adibito ad abitazione principale",
+        value=bool(f.get("abitazione_principale", False))
+    )
+    f["titolare_proprieta_o_diritto_reale"] = g2.checkbox(
+        "Beneficiario proprietario / titolare diritto reale",
+        value=bool(f.get("titolare_proprieta_o_diritto_reale", False))
+    )
+    f["reddito_complessivo_euro"] = g3.number_input(
+        "Reddito complessivo beneficiario (€)",
+        min_value=0.0,
+        value=float(f.get("reddito_complessivo_euro", 0)),
+        step=5000.0
+    )
+    f["figli_fiscalmente_a_carico"] = st.number_input(
+        "Figli fiscalmente a carico · dato utile per verifica limite detrazioni",
+        min_value=0,
+        value=int(f.get("figli_fiscalmente_a_carico", 0)),
+        step=1
+    )
+    f["applica_limite_detrazioni_over_75000"] = st.checkbox(
+        "Segnala limite complessivo detrazioni per redditi oltre €75.000",
+        value=bool(f.get("applica_limite_detrazioni_over_75000", True))
+    )
+
+    labels = [
+        ("bonus_casa", "Bonus ristrutturazioni / recupero edilizio"),
+        ("ecobonus", "Ecobonus"),
+        ("sismabonus_interventi", "Sismabonus interventi"),
+        ("sismabonus_acquisti", "Sismabonus acquisti · demolizione e ricostruzione"),
+        ("bonus_mobili", "Bonus mobili"),
+        ("barriere_bonus_casa", "Eliminazione barriere · Bonus casa"),
+        ("acquisto_immobile_ristrutturato", "Acquisto immobile interamente ristrutturato"),
+    ]
+
+    dets = f.setdefault("detrazioni", {})
+    for key, title in labels:
+        d = dets[key]
+        # Sismabonus acquisti resta visibile sempre, ma evidenziamo la coerenza con il tipo intervento.
+        if key == "sismabonus_acquisti" and p["meta"].get("tipologia_intervento") != "Demolizione + ricostruzione":
+            exp_label = f"{title} · non coerente con il tipo intervento attuale"
+        else:
+            exp_label = title
+        with st.expander(exp_label, expanded=bool(d.get("attivo", False))):
+            d["attivo"] = st.checkbox("Attiva agevolazione", value=bool(d.get("attivo", False)), key=f"tax_on_{key}")
+
+            c1, c2, c3 = st.columns(3)
+            d["spesa_prevista_euro"] = c1.number_input(
+                "Spesa / prezzo di riferimento (€)",
+                min_value=0.0,
+                value=float(d.get("spesa_prevista_euro", 0)),
+                step=5000.0,
+                key=f"tax_spesa_{key}"
+            )
+            d["unita_agevolabili"] = c2.number_input(
+                "Unità agevolabili",
+                min_value=1,
+                value=max(int(d.get("unita_agevolabili", 1)), 1),
+                step=1,
+                key=f"tax_unit_{key}"
+            )
+            d["massimale_spesa_per_unita_euro"] = c3.number_input(
+                "Massimale per unità (€) · 0 = manuale/non applicato",
+                min_value=0.0,
+                value=float(d.get("massimale_spesa_per_unita_euro", 0)),
+                step=5000.0,
+                key=f"tax_cap_{key}"
+            )
+
+            if key.startswith("sismabonus"):
+                d["zona_sismica"] = st.selectbox(
+                    "Zona sismica",
+                    [0, 1, 2, 3, 4],
+                    index=[0, 1, 2, 3, 4].index(int(d.get("zona_sismica", 0) or 0)) if int(d.get("zona_sismica", 0) or 0) in [0,1,2,3,4] else 0,
+                    format_func=lambda x: "Da verificare" if x == 0 else f"Zona {x}",
+                    key=f"tax_zone_{key}"
+                )
+
+            if key == "acquisto_immobile_ristrutturato":
+                d["base_forfettaria_pct"] = st.number_input(
+                    "Quota forfettaria del prezzo che costituisce base (%)",
+                    min_value=0.0, max_value=100.0,
+                    value=float(d.get("base_forfettaria_pct", 25)),
+                    step=1.0,
+                    key=f"tax_basepct_{key}"
+                )
+
+            d["usa_aliquota_manuale"] = st.checkbox(
+                "Imposta aliquota manuale",
+                value=bool(d.get("usa_aliquota_manuale", False)),
+                key=f"tax_manual_{key}"
+            )
+            if d["usa_aliquota_manuale"]:
+                d["aliquota_manuale_pct"] = st.number_input(
+                    "Aliquota manuale (%)",
+                    min_value=0.0, max_value=100.0,
+                    value=float(d.get("aliquota_manuale_pct", 0)),
+                    step=1.0,
+                    key=f"tax_rate_{key}"
+                )
+
+            st.caption(d.get("nota", ""))
+
+    tx = calc_tax_reliefs(p)
+    st.markdown("#### Riepilogo detrazioni attive")
+    if tx["rows"]:
+        st.dataframe(
+            [{
+                "Agevolazione": x["nome"],
+                "Spesa indicata": euro(x["spesa"]),
+                "Base agevolata": euro(x["base"]),
+                "Aliquota": f'{fmt(x["aliquota"])}%',
+                "Detrazione teorica": euro(x["beneficio"]),
+                "Ripartizione": f'{x["anni"]} anni',
+                "Quota annua teorica": euro(x["quota_annua"]),
+                "Beneficiario": x["beneficiario"],
+            } for x in tx["rows"]],
+            hide_index=True,
+            use_container_width=True
+        )
+        k1, k2 = st.columns(2)
+        k1.metric("Detrazioni teoriche complessive", euro(tx["totale_teorico"]))
+        k2.caption("Le detrazioni lato acquirente/contribuente non vengono sottratte automaticamente ai costi né sommate ai ricavi dell'impresa.")
+    else:
+        st.info("Nessuna agevolazione fiscale attivata.")
+
+    for w in tx["warnings"]:
+        st.warning(w)
+    f["note"] = st.text_area("Note fiscali / verifiche", f.get("note", ""))
+
+
+with tabs[9]:
     st.markdown("### Acquisizione / Permuta")
     a = p["acquisizione"]; modes = ["Acquisto", "Permuta", "Mista"]
     a["modalita"] = st.selectbox("Modalità", modes, index=modes.index(a.get("modalita")) if a.get("modalita") in modes else 0)
@@ -619,17 +1052,56 @@ with tabs[8]:
     a["usa_permuta_manuale"] = st.checkbox("Usa valore permuta manuale", value=bool(a.get("usa_permuta_manuale", False)))
     if a["usa_permuta_manuale"]:
         a["permuta_valore_manuale"] = st.number_input("Valore permuta manuale (€)", 0.0, value=float(a.get("permuta_valore_manuale", 0)), step=10000.0)
+    ps = a.setdefault("permuta_superficie", {})
+    deep_defaults(ps, default_permuta_surface())
+    if a["modalita"] in ["Permuta", "Mista"]:
+        st.markdown("#### Superficie equivalente della permuta")
+        e1, e2 = st.columns(2)
+        ps["usa_superficie_manuale"] = e1.checkbox(
+            "Usa superficie reale/manuale della permuta",
+            value=bool(ps.get("usa_superficie_manuale", False))
+        )
+        ps["usa_prezzo_mq_manuale"] = e2.checkbox(
+            "Usa €/m² manuale per l'equivalenza",
+            value=bool(ps.get("usa_prezzo_mq_manuale", False))
+        )
+        if ps["usa_superficie_manuale"]:
+            ps["superficie_manual_mq"] = st.number_input(
+                "Superficie effettivamente ceduta in permuta (m²)",
+                min_value=0.0,
+                value=float(ps.get("superficie_manual_mq", 0)),
+                step=5.0
+            )
+        if ps["usa_prezzo_mq_manuale"]:
+            ps["prezzo_mq_manuale_euro"] = st.number_input(
+                "Valore commerciale di riferimento per la permuta (€/m²)",
+                min_value=0.0,
+                value=float(ps.get("prezzo_mq_manuale_euro", 0)),
+                step=50.0
+            )
+        ps["nota"] = st.text_input("Nota superficie permuta", ps.get("nota", ""))
+
     rr = calc_project(p); s = rr["scenari"]["probabile"]
-    c1, c2, c3 = st.columns(3); c1.metric("Permuta applicata", euro(s["permuta"])); c2.metric("Max acquisizione sostenibile", euro(s["max_acq"])); c3.metric("Permuta max teorica", f'{fmt(s["max_perm_pct"])}%')
+    ps_calc = calc_permuta_surface(p, s["permuta"])
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Permuta applicata", euro(s["permuta"]))
+    c2.metric("Superficie equivalente", f'{fmt(ps_calc["superficie_mq"],1)} m²' if a["modalita"] in ["Permuta", "Mista"] else "—")
+    c3.metric("Max acquisizione sostenibile", euro(s["max_acq"]))
+    c4.metric("Permuta max teorica", f'{fmt(s["max_perm_pct"])}%')
+    if a["modalita"] in ["Permuta", "Mista"]:
+        metodo = "superficie reale/manuale" if ps_calc["manuale"] else f'valore permuta ÷ {euro(ps_calc["prezzo_mq"])} /m²'
+        st.caption(f"Equivalenza calcolata con: {metodo}. Non sostituisce l'identificazione delle unità effettivamente cedute.")
+
     if p.get("permuta_opzioni"):
         st.markdown("#### Opzioni negoziali preimpostate")
         rows = []
         for op in p["permuta_opzioni"]:
             val = float(op.get("valore_totale", 0)); margin = (s["ricavi"] - rr["costi"]["sviluppo"] - val) / s["ricavi"] * 100 if s["ricavi"] else 0
-            rows.append({"Opzione": op.get("nome"), "Composizione": op.get("descrizione"), "Valore riconosciuto": euro(val), "Margine teorico": f'{fmt(margin)}%'})
+            pmq = probable_price_per_mq(p); mqeq = val / pmq if pmq else 0.0
+            rows.append({"Opzione": op.get("nome"), "Composizione": op.get("descrizione"), "Valore riconosciuto": euro(val), "Superficie equivalente": f'{fmt(mqeq,1)} m²', "Margine teorico": f'{fmt(margin)}%'})
         st.dataframe(rows, hide_index=True, use_container_width=True)
 
-with tabs[9]:
+with tabs[10]:
     st.markdown("### Report e dati")
     rr = calc_project(p)
     st.download_button("Genera report PDF", data=make_pdf(p, rr), file_name=f'{slug(p["meta"]["name"])}_fattibilita.pdf', mime="application/pdf", use_container_width=True)
